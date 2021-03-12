@@ -22,7 +22,7 @@ let raddecs = document.querySelector('#raddecs');
 // Connect to the socket.io stream and feed to beaver
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
-let socket = io('http://localhost:3001');//baseUrl);
+let socket = io(baseUrl);
 beaver.listen(socket, true);
 
 
