@@ -18,6 +18,24 @@ const EVENT_ICONS = [
 // DOM elements
 let connection = document.querySelector('#connection');
 let raddecs = document.querySelector('#raddecs');
+let filters = [
+    document.querySelector('#filterAppearances'),
+    document.querySelector('#filterDisplacements'),
+    document.querySelector('#filterPackets'),
+    document.querySelector('#filterKeepalives'),
+    document.querySelector('#filterDisappearances')
+];
+let progressBars = [
+    document.querySelector('#progressAppearances'),
+    document.querySelector('#progressDisplacements'),
+    document.querySelector('#progressPackets'),
+    document.querySelector('#progressKeepalives'),
+    document.querySelector('#progressDisappearances')
+];
+
+// Other variables
+let updateMilliseconds = 1000;
+let eventCounts = [ 0, 0, 0, 0, 0 ];
 
 // Connect to the socket.io stream and feed to beaver
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -40,7 +58,9 @@ socket.on("disconnect", function(reason) {
 
 // Non-disappearance events
 beaver.on([ 0, 1, 2, 3 ], function(raddec) {
-
+  raddec.events.forEach(function(event) {
+    eventCounts[event]++;
+  });
 });
 
 
@@ -52,6 +72,7 @@ beaver.on([ 4 ], function(raddec) {
   if(transmitter) {
     transmitter.remove();
   }
+  eventCounts[4]++;
 });
 
 
@@ -64,10 +85,16 @@ function updateTransmitters() {
     let pac = raddec.packets.length;
     let timestamp = new Date(raddec.timestamp).toLocaleTimeString();
     let tr = document.getElementById(transmitterSignature);
+    let isFiltered = false;
 
     raddec.rssiSignature.forEach(function(signature) {
       if(signature.numberOfDecodings > dec) {
         dec = signature.numberOfDecodings;
+      }
+    });
+    raddec.events.forEach(function(event) {
+      if(filters[event].checked) {
+        isFiltered = true;
       }
     });
 
@@ -79,10 +106,11 @@ function updateTransmitters() {
       tds[3].textContent = raddec.rssiSignature[0].rssi;
       tds[4].textContent = rec + RDPS + dec + RDPS + pac;
       tds[5].textContent = timestamp;
+      tr.style.display = (isFiltered ? '' : 'none');
     }
 
     // New transmitter
-    else {
+    else if(isFiltered) {
       tr = document.createElement('tr');
       tr.setAttribute('id', transmitterSignature);
 
@@ -97,6 +125,28 @@ function updateTransmitters() {
       raddecs.appendChild(tr);
     }
   }
+}
+
+
+// Update the statistics progess bars
+function updateStats() {
+  let maxEventCount = Math.max(...eventCounts);
+
+  progressBars.forEach(function(progressBar, index) {
+    let percentWidth = Math.round(100 * (eventCounts[index] / maxEventCount));
+
+    progressBar.textContent = eventCounts[index];
+    progressBar.style.width = percentWidth + '%';
+  });
+
+  eventCounts.fill(0);
+}
+
+
+// Update the display
+function update() {
+  updateStats();
+  updateTransmitters();
 }
 
 
@@ -147,4 +197,4 @@ function append(parent, elementName, content, classNames) {
 }
 
 
-setInterval(updateTransmitters, 1000);
+setInterval(update, updateMilliseconds);
