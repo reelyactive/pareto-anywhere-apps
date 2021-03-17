@@ -5,6 +5,7 @@
 
 
 // Constants
+const TRANSMITTER_TABLE_MAX_DISPLAYED = 8;
 const SIGNATURE_SEPARATOR = '/';
 const RDPS = ' / ';
 const EVENT_ICONS = [
@@ -78,6 +79,8 @@ beaver.on([ 4 ], function(raddec) {
 
 // Update the transmitters table
 function updateTransmitters() {
+  let numberDisplayed = 0;
+
   for(const transmitterSignature in beaver.transmitters) {
     let raddec = beaver.transmitters[transmitterSignature].raddec;
     let rec = raddec.rssiSignature.length;
@@ -86,6 +89,7 @@ function updateTransmitters() {
     let timestamp = new Date(raddec.timestamp).toLocaleTimeString();
     let tr = document.getElementById(transmitterSignature);
     let isFiltered = false;
+    let isDisplayed = false;
 
     raddec.rssiSignature.forEach(function(signature) {
       if(signature.numberOfDecodings > dec) {
@@ -98,6 +102,10 @@ function updateTransmitters() {
       }
     });
 
+    if((numberDisplayed < TRANSMITTER_TABLE_MAX_DISPLAYED) && isFiltered) {
+      isDisplayed = true;
+    }
+
     // Existing transmitter
     if(tr) {
       let tds = tr.getElementsByTagName('td');
@@ -106,11 +114,11 @@ function updateTransmitters() {
       tds[3].textContent = raddec.rssiSignature[0].rssi;
       tds[4].textContent = rec + RDPS + dec + RDPS + pac;
       tds[5].textContent = timestamp;
-      tr.style.display = (isFiltered ? '' : 'none');
+      tr.style.display = (isDisplayed ? '' : 'none');
     }
 
     // New transmitter
-    else if(isFiltered) {
+    else if(isDisplayed) {
       tr = document.createElement('tr');
       tr.setAttribute('id', transmitterSignature);
 
@@ -124,6 +132,8 @@ function updateTransmitters() {
 
       raddecs.appendChild(tr);
     }
+
+    if(isFiltered) { numberDisplayed++ };
   }
 }
 
