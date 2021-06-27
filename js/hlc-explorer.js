@@ -26,12 +26,9 @@ const COSE_LAYOUT_OPTIONS = {
     initialTemp: 40
 };
 const GRAPH_STYLE = [
-    { selector: "node[type='device']",
-      style: { "background-color": "#83b7d0", label: "data(name)",
-               "font-size": "0.6em", "min-zoomed-font-size": "16px" } },
-    { selector: "node[type='anchor']",
-      style: { "background-color": "#0770a2", label: "data(name)",
-               "font-size": "0.6em", "min-zoomed-font-size": "16px" } },
+    { selector: "node",
+      style: { label: "data(name)", "font-size": "0.6em",
+               "min-zoomed-font-size": "16px" } },
     { selector: "node[image]",
       style: { "background-image": "data(image)", "border-color": "#83b7d0",
                "background-fit": "cover cover", "border-width": "2px" } },
@@ -40,6 +37,12 @@ const GRAPH_STYLE = [
                                  "text-rotation": "autorotate",
                                  color: "#5a5a5a", "font-size": "0.25em",
                                  "min-zoomed-font-size": "12px" } },
+    { selector: ".cyDeviceNode",
+      style: { "background-color": "#83b7d0", "border-color": "#83b7d0" } },
+    { selector: ".cyAnchorNode",
+      style: { "background-color": "#0770a2", "border-color": "#0770a2" } },
+    { selector: ".cySelectedNode",
+      style: { "background-color": "#ff6900", "border-color": "#ff6900" } }
 ];
 
 // DOM elements
@@ -272,21 +275,17 @@ function addDeviceNode(deviceSignature, device) {
   }
 
   let isAnchor = device.hasOwnProperty('position');
-  let type = isAnchor ? 'anchor' : 'device';
+  let nodeClass = isAnchor ? 'cyAnchorNode' : 'cyDeviceNode';
   let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
 
   if(!isExistingNode) {
-    cy.add({ group: "nodes", renderedPosition: { x: 0, y: 0 },
-             data: { id: deviceSignature, type: type, name: name } });
-  }
-  else {
-    cy.getElementById(deviceSignature).data('name', name);
-    cy.getElementById(deviceSignature).data('type', type);
+    cy.add({ group: "nodes", data: { id: deviceSignature } });
   }
 
-  if(imageUrl) {
-    cy.getElementById(deviceSignature).data('image', imageUrl);
-  }
+  let node = cy.getElementById(deviceSignature);
+  node.data('name', name);
+  node.addClass(nodeClass);
+  if(imageUrl) { node.data('image', imageUrl); }
 
   if(device.hasOwnProperty('nearest')) {
     device.nearest.forEach(function(entry) {
@@ -296,7 +295,7 @@ function addDeviceNode(deviceSignature, device) {
       isExistingNode = (cy.getElementById(peerSignature).size() > 0);
 
       if(!isExistingNode) {
-        cy.add({ group: "nodes", data: { id: peerSignature, type: "device" } });
+        cy.add({ group: "nodes", data: { id: peerSignature } });
       }
       if(!isExistingEdge) {
         cy.add({ group: "edges", data: { id: edgeSignature,
@@ -388,7 +387,13 @@ function updateOffcanvasBody(device) {
 function handleNodeTap(event) {
   let device = event.target;
 
+  if(selectedDeviceSignature &&
+     (cy.getElementById(selectedDeviceSignature).size() > 0)) {
+    cy.getElementById(selectedDeviceSignature).removeClass('cySelectedNode');
+  }
+
   selectedDeviceSignature = device.id();
+  cy.getElementById(selectedDeviceSignature).addClass('cySelectedNode');
   offcanvasTitle.textContent = selectedDeviceSignature;
   updateOffcanvasBody(devices[selectedDeviceSignature]);
   bsOffcanvas.show();
@@ -413,6 +418,11 @@ function renderHyperlocalContext() {
     let device = devices[deviceSignature];
 
     addDeviceNode(deviceSignature, device);
+  }
+
+  if(selectedDeviceSignature &&
+     (cy.getElementById(selectedDeviceSignature).size() > 0)) {
+    cy.getElementById(selectedDeviceSignature).addClass('cySelectedNode');
   }
 
   layout.stop();
