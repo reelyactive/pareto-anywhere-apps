@@ -44,6 +44,7 @@ const GRAPH_STYLE = [
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let reinitialise = document.querySelector('#reinitialise');
 let noUpdates = document.querySelector('#settingsNoUpdates');
 let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
 let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
@@ -68,6 +69,9 @@ let cy;
 let layout;
 
 
+// Monitor reinitialisation button
+reinitialise.onclick = init;
+
 // Monitor each settings radio button
 noUpdates.onchange = updateUpdates;
 realTimeUpdates.onchange = updateUpdates;
@@ -79,7 +83,23 @@ focusId.onclick = updateQuery;
 
 
 // Initialisation: poll the context once and display the result
-pollAndDisplay();
+init();
+
+
+// Initialise to full context, no polling
+function init() {
+  selectedUrl = baseUrl + CONTEXT_ROUTE;
+  selectedDeviceSignature = null;
+  isPollPending = false;
+  bsOffcanvas.hide();
+
+  noUpdates.checked = true;
+  realTimeUpdates.checked = false;
+  periodicUpdates.checked = false;
+  updateUpdates();
+
+  pollAndDisplay();
+}
 
 
 // GET the devices and display in DOM
