@@ -33,7 +33,7 @@ const GRAPH_STYLE = [
       style: { "background-color": "#0770a2", label: "data(name)",
                "font-size": "0.6em", "min-zoomed-font-size": "16px" } },
     { selector: "node[image]",
-      style: { "background-image": "data(image)", "border-color": "#aec844",
+      style: { "background-image": "data(image)", "border-color": "#83b7d0",
                "background-fit": "cover cover", "border-width": "2px" } },
     { selector: "edge", style: { "curve-style": "haystack",
                                  "line-color": "#ddd", label: "data(name)",
@@ -116,6 +116,7 @@ function pollAndDisplay() {
         statusIcon = createElement('i', 'fas fa-cloud text-success');
         setContainerHeight();
         renderHyperlocalContext();
+        fetchStories();
       }
       else {
         connection.hidden = false;
@@ -217,9 +218,59 @@ function updateUpdates(event) {
 }
 
 
+// Fetch stories from devices with URIs
+function fetchStories() {
+  for(const deviceSignature in devices) {
+    let device = devices[deviceSignature];
+    let url = device.url;
+
+    if(!url && device.hasOwnProperty('statid')) {
+      url = device.statid.uri;
+    }
+
+    if(url) {
+      cormorant.retrieveStory(url, function(story) {
+        let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
+        if(story && isExistingNode) {
+          let node = cy.getElementById(deviceSignature);
+          let name = cuttlefish.determineTitle(story);
+          let imageUrl = cuttlefish.determineImageUrl(story);
+
+          node.data('name', name);
+          if(imageUrl) { node.data('image', imageUrl); }
+        }
+      });
+    }
+  }
+}
+
+
+// Retrieve the device story if already fetched by cormorant
+function retrieveDeviceStory(device) {
+  if(device.url && cormorant.stories[device.url]) {
+    return cormorant.stories[device.url];
+  }
+
+  if(device.hasOwnProperty('statid') && device.statid.uri &&
+     cormorant.stories[device.statid.uri]) {
+    return cormorant.stories[device.statid.uri];
+  }
+
+  return null;
+}
+
+
 // Add a device node to the hyperlocal context graph
 function addDeviceNode(deviceSignature, device) {
   let name = determineDeviceName(device);
+  let imageUrl;
+  let story = retrieveDeviceStory(device);
+
+  if(story) {
+    name = cuttlefish.determineTitle(story) || name;
+    imageUrl = cuttlefish.determineImageUrl(story);
+  }
+
   let isAnchor = device.hasOwnProperty('position');
   let type = isAnchor ? 'anchor' : 'device';
   let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
@@ -231,6 +282,10 @@ function addDeviceNode(deviceSignature, device) {
   else {
     cy.getElementById(deviceSignature).data('name', name);
     cy.getElementById(deviceSignature).data('type', type);
+  }
+
+  if(imageUrl) {
+    cy.getElementById(deviceSignature).data('image', imageUrl);
   }
 
   if(device.hasOwnProperty('nearest')) {
