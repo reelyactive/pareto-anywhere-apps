@@ -8,6 +8,7 @@
 const STATUS_OK = 200;
 const SIGNATURE_SEPARATOR = '/';
 const DIRECTORY_SEPARATOR = ':';
+const POLLING_INTERVAL_MILLISECONDS = 10000;
 const CONTEXT_ROUTE = '/context';
 const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';
@@ -43,6 +44,9 @@ const GRAPH_STYLE = [
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let noUpdates = document.querySelector('#settingsNoUpdates');
+let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
+let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
@@ -55,11 +59,19 @@ let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let selectedUrl = baseUrl + CONTEXT_ROUTE;
 let isPollPending = false;
+let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
 let devices = {};
+let socket;
 let cy;
 let layout;
+
+
+// Monitor each settings radio button
+noUpdates.onchange = updateUpdates;
+realTimeUpdates.onchange = updateUpdates;
+periodicUpdates.onchange = updateUpdates;
 
 
 // Monitor button clicks to change focus
@@ -85,6 +97,9 @@ function pollAndDisplay() {
         setContainerHeight();
         renderHyperlocalContext();
       }
+      else {
+        connection.hidden = false;
+      }
 
       connection.replaceChildren(statusIcon);
     });
@@ -108,6 +123,34 @@ function getContext(url, callback) {
 }
 
 
+// Create and manage a socket.io connection
+function createSocket() {
+  socket = io(selectedUrl);
+
+  socket.on('connect', function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  });
+
+  socket.on('devices', function(updatedDevices) {
+    devices = updatedDevices;
+    renderHyperlocalContext();
+  });
+
+  socket.on('dynamb', function(dynamb) {
+    let signature = dynamb.deviceId + SIGNATURE_SEPARATOR + dynamb.deviceIdType;
+    // TODO
+  });
+
+  socket.on('connect_error', function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+  });
+
+  socket.on('disconnect', function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+  });
+}
+
+
 // Update the API query/method based on user selection
 function updateQuery(event) {
   switch(event.currentTarget.id) {
@@ -125,7 +168,32 @@ function updateQuery(event) {
       break;
   }
 
+  realTimeUpdates.disabled = false;
   pollAndDisplay();
+}
+
+
+// Update the update method
+function updateUpdates(event) {
+  if(noUpdates.checked) {
+    connection.hidden = true;
+    if(socket) { socket.disconnect(); }
+    clearInterval(pollingInterval);
+  }
+
+  if(realTimeUpdates.checked) { 
+    connection.hidden = false;
+    clearInterval(pollingInterval);
+    createSocket();
+  }
+
+  if(periodicUpdates.checked) {
+    connection.hidden = true;
+    if(socket) { socket.disconnect(); }
+    pollAndDisplay();
+    pollingInterval = setInterval(pollAndDisplay,
+                                  POLLING_INTERVAL_MILLISECONDS);
+  }
 }
 
 
