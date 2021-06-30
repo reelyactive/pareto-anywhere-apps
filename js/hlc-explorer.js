@@ -54,6 +54,7 @@ let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
+let storyDisplay = document.querySelector('#storyDisplay');
 let focusId = document.querySelector('#focusId');
 let focusTagsList = document.querySelector('#focusTagsList');
 let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
@@ -240,8 +241,8 @@ function fetchStories() {
         let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
         if(story && isExistingNode) {
           let node = cy.getElementById(deviceSignature);
-          let name = cuttlefish.determineTitle(story);
-          let imageUrl = cuttlefish.determineImageUrl(story);
+          let name = cuttlefishStory.determineTitle(story);
+          let imageUrl = cuttlefishStory.determineImageUrl(story);
 
           node.data('name', name);
           if(imageUrl) { node.data('image', imageUrl); }
@@ -274,8 +275,8 @@ function addDeviceNode(deviceSignature, device) {
   let story = retrieveDeviceStory(device);
 
   if(story) {
-    name = cuttlefish.determineTitle(story) || name;
-    imageUrl = cuttlefish.determineImageUrl(story);
+    name = cuttlefishStory.determineTitle(story) || name;
+    imageUrl = cuttlefishStory.determineImageUrl(story);
   }
 
   let isAnchor = device.hasOwnProperty('position');
@@ -339,6 +340,11 @@ function determineDeviceName(device) {
 function updateOffcanvasBody(device) {
   let dropdownItems = new DocumentFragment();
   let dynambContent = new DocumentFragment();
+  let story = retrieveDeviceStory(device);
+
+  if(story) {
+    cuttlefishStory.render(story, storyDisplay);
+  }
 
   if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
     device.tags.forEach(function(tag) {
