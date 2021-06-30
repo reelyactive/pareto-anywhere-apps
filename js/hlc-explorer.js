@@ -57,6 +57,7 @@ let offcanvasBody = document.querySelector('#offcanvasBody');
 let focusId = document.querySelector('#focusId');
 let focusTagsList = document.querySelector('#focusTagsList');
 let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
+let dynambDisplay = document.querySelector('#dynambDisplay');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -162,7 +163,10 @@ function createSocket() {
 
   socket.on('dynamb', function(dynamb) {
     let signature = dynamb.deviceId + SIGNATURE_SEPARATOR + dynamb.deviceIdType;
-    // TODO
+    if(signature === selectedDeviceSignature) {
+      let dynambContent = cuttlefishDynamb.render(dynamb);
+      dynambDisplay.replaceChildren(dynambContent);
+    }
   });
 
   socket.on('connect_error', function() {
@@ -334,6 +338,7 @@ function determineDeviceName(device) {
 // Update the offcanvas body based on the selected device
 function updateOffcanvasBody(device) {
   let dropdownItems = new DocumentFragment();
+  let dynambContent = new DocumentFragment();
 
   if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
     device.tags.forEach(function(tag) {
@@ -380,6 +385,12 @@ function updateOffcanvasBody(device) {
   }
 
   focusDirectoriesList.replaceChildren(dropdownItems);
+
+  if(device.hasOwnProperty('dynamb')) {
+    dynambContent = cuttlefishDynamb.render(device.dynamb);
+  }
+
+  dynambDisplay.replaceChildren(dynambContent);
 }
 
 
