@@ -13,6 +13,7 @@ const CONTEXT_ROUTE = '/context';
 const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';
 const TAG_ROUTE = '/tag';
+const UPDATES_SEARCH_PARAMETER = 'updates';
 const MAX_RSSI = -30;
 const HLC_MIN_HEIGHT_PX = 480;
 const HLC_UNUSABLE_HEIGHT_PX = 120;
@@ -73,6 +74,10 @@ let socket;
 let cy;
 let layout;
 
+// Initialise based on URL search parameters, if any
+let searchParams = new URLSearchParams(location.search);
+let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
+
 
 // Monitor reinitialisation button
 reinitialise.onclick = init;
@@ -93,17 +98,36 @@ init();
 
 // Initialise to full context, no polling
 function init() {
+  if(hasUpdatesSearch) {
+    let selectedUpdates = searchParams.get(UPDATES_SEARCH_PARAMETER);
+
+    if(selectedUpdates === 'periodic') {
+      noUpdates.checked = false;
+      realTimeUpdates.checked = false;
+      periodicUpdates.checked = true;
+    }
+    else if(selectedUpdates === 'realtime') {
+      noUpdates.checked = false;
+      realTimeUpdates.checked = true;
+      periodicUpdates.checked = false;
+    }
+  }
+  else {
+    noUpdates.checked = true;
+    realTimeUpdates.checked = false;
+    periodicUpdates.checked = false;
+  }
+
   selectedUrl = baseUrl + CONTEXT_ROUTE;
   selectedDeviceSignature = null;
   isPollPending = false;
   bsOffcanvas.hide();
 
-  noUpdates.checked = true;
-  realTimeUpdates.checked = false;
-  periodicUpdates.checked = false;
   updateUpdates();
 
-  pollAndDisplay();
+  if(noUpdates.checked) {
+    pollAndDisplay();
+  }
 }
 
 
