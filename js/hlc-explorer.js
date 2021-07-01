@@ -364,10 +364,14 @@ function determineDeviceName(device) {
 function updateOffcanvasBody(device) {
   let dropdownItems = new DocumentFragment();
   let dynambContent = new DocumentFragment();
+  let statidContent = new DocumentFragment();
   let story = retrieveDeviceStory(device);
 
   if(story) {
     cuttlefishStory.render(story, storyDisplay);
+  }
+  else {
+    storyDisplay.replaceChildren();
   }
 
   if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
@@ -419,8 +423,12 @@ function updateOffcanvasBody(device) {
   if(device.hasOwnProperty('dynamb')) {
     dynambContent = cuttlefishDynamb.render(device.dynamb);
   }
+  if(device.hasOwnProperty('statid')) {
+    statidContent = cuttlefishStatid.render(device.statid);
+  }
 
   dynambDisplay.replaceChildren(dynambContent);
+  statidDisplay.replaceChildren(statidContent);
 }
 
 
