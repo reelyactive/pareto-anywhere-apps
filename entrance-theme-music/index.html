@@ -5,9 +5,9 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description"
-          content="Collection of web apps for Pareto Anywhere by reelyActive.">
-    <link rel="stylesheet" href="style/bootstrappyactive.min.css">
-    <title> Pareto Apps </title>
+          content="Entrance Theme Music web app for Pareto Anywhere by reelyActive.">
+    <link rel="stylesheet" href="../style/bootstrappyactive.min.css">
+    <title> Entrance Theme Music </title>
   </head>
   <body>
     <!-- Navigation -->
@@ -15,11 +15,11 @@
                 shadow">
       <div class="container-fluid">
         <a class="navbar-brand" href="https://www.reelyactive.com/">
-          <img src="images/reelyactive-logo-square-nav.png"
+          <img src="../images/reelyactive-logo-square-nav.png"
                width="30" height="30" alt="reelyActive">
         </a>
-        <a class="navbar-brand" href="./">
-          <img src="images/pareto-apps-logo-nav.png" width="135" height="30"
+        <a class="navbar-brand" href="../">
+          <img src="../images/pareto-apps-logo-nav.png" width="135" height="30"
                alt="Pareto Apps">
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -33,6 +33,11 @@
           </ul>
           <!-- Right-aligned navigation items -->
           <ul class="navbar-nav">
+            <li class="nav-item">
+              <a id="connection" class="nav-link">
+                <i class="fas fa-cloud"></i>
+              </a>
+            </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" id="navbarInfoDropdown"
                  role="button" data-bs-toggle="dropdown" aria-haspopup="true"
@@ -87,6 +92,29 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/beaver/" >
+                    <i class="fab fa-js"></i>
+                    beaver.js &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-creative-commons"></i>
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://socket.io/" >
+                    <i class="fab fa-js"></i>
+                    socket.io 4 &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-creative-commons"></i>
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
                      href="https://www.reelyactive.com/made-in-montreal/" >
                     <i class="fab fa-canadian-maple-leaf"></i>
                     Made in Montr&eacute;al &nbsp;
@@ -99,40 +127,25 @@
         </div>
       </div>
     </nav>
-    <!-- Content -->
-    <div class="container-fluid">
-      <div class="row justify-content-center">
-        <div class="col-xl-12 col-xxl-10">
-          <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xxl-6 g-4 my-4"
-               id="appcards">
-            <!-- Hyperlocal Context Explorer -->
-            <div class="col">
-              <div class="card h-100 hover-shadow">
-                <a href="hlc-explorer">
-                  <img src="images/hlc-explorer-icon.png"
-                       class="card-img-top" alt="Hyperlocal Context Explorer">
-                </a>
-                <div class="card-footer bg-dark bg-gradient text-white">
-                  <h5 class="mb-0 text-truncate"> Hyperlocal Context Explorer </h5>
-                </div>
-              </div>
-            </div>
-            <!-- Hello beaver! -->
-            <div class="col">
-              <div class="card h-100 hover-shadow">
-                <a href="hello-beaver">
-                  <img src="images/hello-beaver-icon.png"
-                       class="card-img-top" alt="Hello beaver!">
-                </a>
-                <div class="card-footer bg-dark bg-gradient text-white">
-                  <h5 class="mb-0 text-truncate"> Hello beaver! </h5>
-                </div>
-              </div>
-            </div>
+
+    <!----- Herowl ----->
+    <div class="herowl">
+      <div class="col-xs-12 col-sm-10 col-lg-6 offset-lg-4 col-xl-6
+                  offset-xl-2">
+        <div id="welcome" class="card">
+          <h5 class="card-header text-white bg-dark">
+            <i class="fas fa-exclamation-triangle text-warning"></i>
+            User action required
+          </h5>
+          <div class="card-body">
+            <button id="enableaudio" class="btn btn-secondary" type="button">
+              Enable Audio
+            </button>
           </div>
         </div>
       </div>
     </div>
+
     <footer class="footer bg-dark bg-gradient">
       <a href="https://github.com/reelyactive/pareto-anywhere-apps">
         pareto-anywhere-apps
@@ -142,7 +155,12 @@
     </footer>
 
     <!-- Optional JavaScript -->
-    <script defer src="js/fontawesome-reelyactive.min.js"></script>
-    <script src="js/bootstrappyactive.bundle.min.js"></script>
+    <script defer src="../js/fontawesome-reelyactive.min.js"></script>
+    <script src="../js/bootstrappyactive.bundle.min.js"></script>
+    <script src="../js/socket.io.min.js"></script>
+    <script src="../js/beaver.js"></script>
+    <script src="../js/cormorant.js"></script>
+    <script src="../js/Tone.js"></script>
+    <script src="../js/entrance-theme-music.js"></script>
   </body>
 </html>
