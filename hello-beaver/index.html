@@ -92,6 +92,29 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/beaver/" >
+                    <i class="fab fa-js"></i>
+                    beaver.js &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-creative-commons"></i>
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://socket.io/" >
+                    <i class="fab fa-js"></i>
+                    socket.io 4 &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-creative-commons"></i>
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
                      href="https://www.reelyactive.com/made-in-montreal/" >
                     <i class="fab fa-canadian-maple-leaf"></i>
                     Made in Montr&eacute;al &nbsp;
@@ -107,9 +130,146 @@
     <!-- Content -->
     <div class="container-fluid">
       <div class="row justify-content-center">
-        <div class="col-sm-12 col-md-10 col-lg-8 col-xl-6">
-          <h1 class="mt-5"> Hello beaver! </h1>
+        <div class="col-md-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div class="row mt-5">
+            <div class="col-md-6 mb-3">
+              <table class="table table-hover text-center">
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="form-switch">
+                        <input class="form-check-input align-middle" checked
+                               type="checkbox" id="filterAppearances">
+                      </div>
+                    </td>
+                    <th class="bg-dark text-white align-middle lead">
+                      <i class="fas fa-sign-in-alt"></i>
+                    </th>
+                    <td class="align-middle"> Appearances </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="form-switch">
+                        <input class="form-check-input align-middle" checked
+                               type="checkbox" id="filterDisplacements">
+                      </div>
+                    </td>
+                    <th class="bg-dark text-white align-middle lead">
+                      <i class="fas fa-route"></i>
+                    </th>
+                    <td class="align-middle"> Displacements </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="form-switch">
+                        <input class="form-check-input align-middle" checked
+                               type="checkbox" id="filterPackets">
+                      </div>
+                    </td>
+                    <th class="bg-dark text-white align-middle lead">
+                      <i class="fas fa-info"></i>
+                    </th>
+                    <td class="align-middle"> Packets </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="form-switch">
+                        <input class="form-check-input align-middle" checked
+                               type="checkbox" id="filterKeepalives">
+                      </div>
+                    </td>
+                    <th class="bg-dark text-white align-middle lead">
+                      <i class="fas fa-heartbeat"></i>
+                    </th>
+                    <td class="align-middle"> Keep-Alives </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="form-switch">
+                        <input class="form-check-input align-middle" disabled
+                               type="checkbox" id="filterDisappearances">
+                      </div>
+                    </td>
+                    <th class="bg-dark text-white align-middle lead">
+                      <i class="fas fa-sign-out-alt"></i>
+                    </th>
+                    <td class="align-middle"> Disappearances </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table text-center">
+                <tbody>
+                  <tr>
+                    <td class="align-middle w-75">
+                      <div class="progress">
+                        <div id="progressAppearances" class="progress-bar"
+                             role="progressbar" style="width: 0%"> 0 </div>
+                      </div>
+                    </td>
+                    <th class="align-middle lead">
+                      <i class="fas fa-sign-in-alt"></i>
+                      <span class="text-muted small"> / sec </span>
+                    </th>
+                  </tr>
+                  <tr>
+                    <td class="align-middle w-75">
+                      <div class="progress">
+                        <div id="progressDisplacements" class="progress-bar"
+                             role="progressbar" style="width: 0%"> 0 </div>
+                      </div>
+                    </td>
+                    <th class="align-middle lead">
+                      <i class="fas fa-route"></i>
+                      <span class="text-muted small"> / sec </span>
+                    </th>
+                  </tr>
+                  <tr>
+                    <td class="align-middle w-75">
+                      <div class="progress">
+                        <div id="progressPackets" class="progress-bar"
+                             role="progressbar" style="width: 0%"> 0 </div>
+                      </div>
+                    </td>
+                    <th class="align-middle lead">
+                      <i class="fas fa-info"></i>
+                      <span class="text-muted small"> / sec </span>
+                    </th>
+                  </tr>
+                  <tr>
+                    <td class="align-middle w-75">
+                      <div class="progress">
+                        <div id="progressKeepalives" class="progress-bar"
+                             role="progressbar" style="width: 0%"> 0 </div>
+                      </div>
+                    </td>
+                    <th class="align-middle lead">
+                      <i class="fas fa-heartbeat"></i>
+                      <span class="text-muted small"> / sec </span>
+                    </th>
+                  </tr>
+                  <tr>
+                    <td class="align-middle w-75">
+                      <div class="progress">
+                        <div id="progressDisappearances" class="progress-bar bg-info"
+                             role="progressbar" style="width: 0%"> 0 </div>
+                      </div>
+                    </td>
+                    <th class="align-middle lead">
+                      <i class="fas fa-sign-out-alt"></i>
+                      <span class="text-muted small"> / sec </span>
+                    </th>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           <table class="table table-hover my-5">
+            <caption>
+              Current transmitters passing event filters
+              <span class="small animate-breathing"> (max 8 displayed) </span>
+            </caption>
             <thead>
               <tr>
                 <th scope="col">
@@ -124,10 +284,10 @@
                 <th scope="col">
                   <i class="fas fa-signal"></i> rssi
                 </th>
-                <th scope="col">
+                <th scope="col" class="d-none d-lg-table-cell">
                   <i class="fas fa-info-circle"></i> rec / dec / pac
                 </th>
-                <th scope="col">
+                <th scope="col" class="d-none d-lg-table-cell">
                   <i class="fas fa-clock"></i> timestamp
                 </th>
               </tr>
