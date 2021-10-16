@@ -11,11 +11,13 @@ const DIRECTORY_SEPARATOR = ':';
 const POLLING_INTERVAL_MILLISECONDS = 5000;
 const CONTEXT_ROUTE = '/context';
 const SNIFFYPEDIA_BASE_URI = 'https://sniffypedia.org/';
+const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 
 // DOM elements
 let connection = document.querySelector('#connection');
 let storycolumn = document.querySelector('#storycolumn');
-let charcolumn = document.querySelector('#charcolumn');
+let chartable = document.querySelector('#chartable');
+let time = document.querySelector('#time');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -51,6 +53,7 @@ function pollAndDisplay() {
       connection.replaceChildren(statusIcon);
     });
   }
+  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 }
 
 
@@ -72,19 +75,20 @@ function getContext(url, callback) {
 // Update the display based on the latest devices
 function updateDisplay(devices) {
   let updatedStoryCards = prepareStoryCards(devices);
-  let updatedCharCards = new DocumentFragment();
+  let updatedCharTableRows = new DocumentFragment();
   let charTallies = tallyUnicodeCodePoints(devices);
 
   if(charTallies.size > 0) {
     let maxCount = charTallies.entries().next().value[1];
 
     charTallies.forEach((count, unicodeCodePoint) => {
-      appendCard(updatedCharCards, unicodeCodePoint, count, maxCount);
+      appendCharTableRow(updatedCharTableRows, unicodeCodePoint, count,
+                         maxCount);
     });
   }
 
   storycolumn.replaceChildren(updatedStoryCards);
-  charcolumn.replaceChildren(updatedCharCards);
+  chartable.replaceChildren(updatedCharTableRows);
 }
 
 
@@ -150,24 +154,19 @@ function tallyUnicodeCodePoints(devices) {
 }
 
 
-// Create and append a card with character count
-function appendCard(parent, unicodeCodePoint, count, maxCount) {
-  let charText = createElement('span', 'card-text display-4',
+// Create and append a table row character count
+function appendCharTableRow(parent, unicodeCodePoint, count, maxCount) {
+  let th = createElement('th', 'w-25 table-light display-2 mb-1',
                                String.fromCodePoint(unicodeCodePoint));
-  let charBody = createElement('div', 'card-body text-center', charText);
-  let leftCol = createElement('div', 'col-4 col-sm-3', charBody);
   let progressBar = createElement('div', 'progress-bar', count);
   let progress = createElement('div', 'progress', progressBar);
-  let countText = createElement('p', 'card-text', progress);
-  let countBody = createElement('div', 'card-body', countText);
-  let rightCol = createElement('div', 'col-8 col-sm-9', countBody);
-  let row = createElement('div', 'row g-0', [ leftCol, rightCol ]);
-  let card = createElement('div', 'card hover-shadow mb-3', row);
+  let td = createElement('td', 'w-75 align-middle', progress);
+  let tr = createElement('tr', '', [ th, td ]);
   let widthPercentage = Math.floor(100 * count / maxCount);
 
   progressBar.setAttribute('style', 'width: ' + widthPercentage + '%');
 
-  parent.appendChild(card);
+  parent.appendChild(tr);
 }
 
 
