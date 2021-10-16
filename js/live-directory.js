@@ -36,15 +36,16 @@ function pollAndDisplay() {
 
     getContext(selectedUrl, function(status, response) {
       let statusIcon = createElement('i', 'fas fa-cloud text-danger');
-      devices = response.devices || {};
       isPollPending = false;
 
       if(status === STATUS_OK) {
+        let devices = JSON.parse(response).devices || {};
         statusIcon = createElement('i', 'fas fa-cloud text-success');
         updateDisplay(devices);
       }
       else {
         connection.hidden = false;
+        updateDisplay({});
       }
 
       connection.replaceChildren(statusIcon);
@@ -59,8 +60,7 @@ function getContext(url, callback) {
 
   httpRequest.onreadystatechange = function() {
     if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      return callback(httpRequest.status,
-                      JSON.parse(httpRequest.responseText));
+      return callback(httpRequest.status, httpRequest.responseText);
     }
   };
   httpRequest.open('GET', url);
@@ -74,11 +74,14 @@ function updateDisplay(devices) {
   let updatedStoryCards = prepareStoryCards(devices);
   let updatedCharCards = new DocumentFragment();
   let charTallies = tallyUnicodeCodePoints(devices);
-  let maxCount = charTallies.entries().next().value[1];
 
-  charTallies.forEach((count, unicodeCodePoint) => {
-    appendCard(updatedCharCards, unicodeCodePoint, count, maxCount);
-  });
+  if(charTallies.size > 0) {
+    let maxCount = charTallies.entries().next().value[1];
+
+    charTallies.forEach((count, unicodeCodePoint) => {
+      appendCard(updatedCharCards, unicodeCodePoint, count, maxCount);
+    });
+  }
 
   storycolumn.replaceChildren(updatedStoryCards);
   charcolumn.replaceChildren(updatedCharCards);
