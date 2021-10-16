@@ -111,12 +111,14 @@ function prepareStoryCards(devices) {
       if(isStoryFetched) {
         let card = cuttlefishStory.render(cormorant.stories[uri]);
         let col = createElement('div', 'col', card);
+        card.setAttribute('class', 'card hover-shadow');
         storyCards.appendChild(col);
       }
       else {
         cormorant.retrieveStory(uri, function(story) {
           let card = cuttlefishStory.render(story);
           let col = createElement('div', 'col', card);
+          card.setAttribute('class', 'card hover-shadow');
           storycolumn.appendChild(col);
         }); 
       }
