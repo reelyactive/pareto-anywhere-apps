@@ -11,6 +11,7 @@ const DIRECTORY_SEPARATOR = ':';
 const POLLING_INTERVAL_MILLISECONDS = 5000;
 const CONTEXT_ROUTE = '/context';
 const SNIFFYPEDIA_BASE_URI = 'https://sniffypedia.org/';
+const ACCEPTED_STORY_TYPES = [ 'schema:Person', 'schema:Product' ];
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 
 // DOM elements
@@ -113,17 +114,22 @@ function prepareStoryCards(devices) {
       let isStoryFetched = cormorant.stories.hasOwnProperty(uri);
 
       if(isStoryFetched) {
-        let card = cuttlefishStory.render(cormorant.stories[uri]);
-        let col = createElement('div', 'col', card);
-        card.setAttribute('class', 'card hover-shadow');
-        storyCards.appendChild(col);
-      }
-      else {
-        cormorant.retrieveStory(uri, function(story) {
+        let story = cormorant.stories[uri];
+        if(isAcceptedStoryType(story, ACCEPTED_STORY_TYPES)) {
           let card = cuttlefishStory.render(story);
           let col = createElement('div', 'col', card);
           card.setAttribute('class', 'card hover-shadow');
-          storycolumn.appendChild(col);
+          storyCards.appendChild(col);
+        }
+      }
+      else {
+        cormorant.retrieveStory(uri, function(story) {
+          if(isAcceptedStoryType(story, ACCEPTED_STORY_TYPES)) {
+            let card = cuttlefishStory.render(story);
+            let col = createElement('div', 'col', card);
+            card.setAttribute('class', 'card hover-shadow');
+            storycolumn.appendChild(col);
+          }
         }); 
       }
     }
@@ -170,11 +176,18 @@ function appendCharTableRow(parent, unicodeCodePoint, count, maxCount) {
 }
 
 
-// Fetch stories from devices with URIs
-function fetchStories(uris) {
-  for(const uri of uris) {
-    cormorant.retrieveStory(uri, function(story) {});
+// Determine if the given story is a member of one of the accepted types
+function isAcceptedStoryType(story, acceptedTypes) {
+  if(story && Array.isArray(story['@graph']) && Array.isArray(acceptedTypes)) {
+    for(const element of story['@graph']) {
+      if(element.hasOwnProperty('@type') &&
+         acceptedTypes.includes(element['@type'])) {
+        return true;
+      }
+    }
   }
+
+  return false;
 }
 
 
