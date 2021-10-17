@@ -40,11 +40,13 @@ function pollAndDisplay() {
       isPollPending = false;
 
       if(status === STATUS_OK) {
+        let devices = JSON.parse(response).devices || {};
         statusIcon = createElement('i', 'fas fa-cloud text-success');
         updateDisplay(devices);
       }
       else {
         connection.hidden = false;
+        updateDisplay({});
       }
 
       connection.replaceChildren(statusIcon);
@@ -59,8 +61,7 @@ function getContext(url, callback) {
 
   httpRequest.onreadystatechange = function() {
     if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      return callback(httpRequest.status,
-                      JSON.parse(httpRequest.responseText));
+      return callback(httpRequest.status, httpRequest.responseText);
     }
   };
   httpRequest.open('GET', url);
@@ -72,21 +73,24 @@ function getContext(url, callback) {
 // Update the display based on the latest devices
 function updateDisplay(devices) {
   let sniffypediaUris = tallyStatid(devices);
-  let halfwayMark = Math.ceil(sniffypediaUris.size / 2);
-  let maxCount = sniffypediaUris.entries().next().value[1];
   let firstGroup = new DocumentFragment();
   let secondGroup = new DocumentFragment();
-  let offset = 0;
 
-  fetchStories(sniffypediaUris.keys());
-  sniffypediaUris.forEach((count, uri) => {
-    if(offset++ < halfwayMark) {
-      appendCard(firstGroup, uri, count, maxCount);
-    }
-    else {
-      appendCard(secondGroup, uri, count, maxCount);
-    }
-  });
+  if(sniffypediaUris.size > 0) {
+    let halfwayMark = Math.ceil(sniffypediaUris.size / 2);
+    let maxCount = sniffypediaUris.entries().next().value[1];
+    let offset = 0;
+
+    fetchStories(sniffypediaUris.keys());
+    sniffypediaUris.forEach((count, uri) => {
+      if(offset++ < halfwayMark) {
+        appendCard(firstGroup, uri, count, maxCount);
+      }
+      else {
+        appendCard(secondGroup, uri, count, maxCount);
+      }
+    });
+  }
 
   firsthalf.replaceChildren(firstGroup);
   secondhalf.replaceChildren(secondGroup);
