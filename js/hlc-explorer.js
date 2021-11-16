@@ -303,12 +303,21 @@ function addDeviceNode(deviceSignature, device) {
     imageUrl = cuttlefishStory.determineImageUrl(story);
   }
 
-  let isAnchor = device.hasOwnProperty('position');
+  let isAnchor = device.hasOwnProperty('position') &&
+                 Array.isArray(device.position) &&
+                 (device.position.length >= 2) &&
+                 (typeof device.position[0] === 'number') &&
+                 (typeof device.position[1] === 'number');
   let nodeClass = isAnchor ? 'cyAnchorNode' : 'cyDeviceNode';
   let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
 
-  if(!isExistingNode) {
+  if(!isExistingNode && !isAnchor) {
     cy.add({ group: "nodes", data: { id: deviceSignature } });
+  }
+  else if(!isExistingNode) {
+    cy.add({ group: "nodes", data: { id: deviceSignature,
+                                     position: { x: device.position[0],
+                                                 y: device.position[1] } } });
   }
 
   let node = cy.getElementById(deviceSignature);
