@@ -70,6 +70,7 @@ let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
 let devices = {};
+let isFocusId;
 let socket;
 let cy;
 let layout;
@@ -87,18 +88,22 @@ noUpdates.onchange = updateUpdates;
 realTimeUpdates.onchange = updateUpdates;
 periodicUpdates.onchange = updateUpdates;
 
-
 // Monitor button clicks to change focus
 focusId.onclick = updateQuery;
 
+// Monitor offcanvas hide/close
+offcanvas.addEventListener('hidden.bs.offcanvas', handleOffcanvasHide);
+
 
 // Initialisation: poll the context once and display the result
-init();
+init(true);
 
 
 // Initialise to full context, no polling
-function init() {
-  if(hasUpdatesSearch) {
+function init(isInitialPageLoad) {
+  if(socket) { socket.disconnect(); }
+
+  if((isInitialPageLoad === true) && hasUpdatesSearch) {
     let selectedUpdates = searchParams.get(UPDATES_SEARCH_PARAMETER);
 
     if(selectedUpdates === 'periodic') {
@@ -116,10 +121,12 @@ function init() {
     noUpdates.checked = true;
     realTimeUpdates.checked = false;
     periodicUpdates.checked = false;
+    realTimeUpdates.disabled = true;
   }
 
   selectedUrl = baseUrl + CONTEXT_ROUTE;
   selectedDeviceSignature = null;
+  isFocusId = false;
   isPollPending = false;
   bsOffcanvas.hide();
 
@@ -206,18 +213,24 @@ function createSocket() {
 
 // Update the API query/method based on user selection
 function updateQuery(event) {
+  if(socket) { socket.disconnect(); }
+
   switch(event.currentTarget.id) {
     case 'focusId':
       selectedUrl = baseUrl + CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
                     selectedDeviceSignature;
+      isFocusId = true;
+      if(realTimeUpdates.checked) { createSocket(); }
       break;
     case 'focusTag':
       let tag = event.currentTarget.textContent;
       selectedUrl = baseUrl + CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
+      isFocusId = false;
       break;
     case 'focusDirectory':
       let directory = event.currentTarget.textContent;
       selectedUrl = baseUrl + CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
+      isFocusId = false;
       break;
   }
 
@@ -247,6 +260,8 @@ function updateUpdates(event) {
     pollingInterval = setInterval(pollAndDisplay,
                                   POLLING_INTERVAL_MILLISECONDS);
   }
+
+  updateSearchString();
 }
 
 
@@ -303,12 +318,21 @@ function addDeviceNode(deviceSignature, device) {
     imageUrl = cuttlefishStory.determineImageUrl(story);
   }
 
-  let isAnchor = device.hasOwnProperty('position');
+  let isAnchor = device.hasOwnProperty('position') &&
+                 Array.isArray(device.position) &&
+                 (device.position.length >= 2) &&
+                 (typeof device.position[0] === 'number') &&
+                 (typeof device.position[1] === 'number');
   let nodeClass = isAnchor ? 'cyAnchorNode' : 'cyDeviceNode';
   let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
 
-  if(!isExistingNode) {
+  if(!isExistingNode && !isAnchor) {
     cy.add({ group: "nodes", data: { id: deviceSignature } });
+  }
+  else if(!isExistingNode) {
+    cy.add({ group: "nodes", data: { id: deviceSignature,
+                                     position: { x: device.position[0],
+                                                 y: device.position[1] } } });
   }
 
   let node = cy.getElementById(deviceSignature);
@@ -449,6 +473,19 @@ function handleNodeTap(event) {
 }
 
 
+// Handle an offcanvas hide
+function handleOffcanvasHide() {
+  if(!isFocusId) {
+    if(selectedDeviceSignature &&
+       (cy.getElementById(selectedDeviceSignature).size() > 0)) {
+      cy.getElementById(selectedDeviceSignature).removeClass('cySelectedNode');
+    }
+
+    selectedDeviceSignature = null;
+  }
+}
+
+
 // Render the hyperlocal context graph
 function renderHyperlocalContext() {
   let options = {
@@ -467,6 +504,10 @@ function renderHyperlocalContext() {
     let device = devices[deviceSignature];
 
     addDeviceNode(deviceSignature, device);
+
+    if(deviceSignature === selectedDeviceSignature) {
+      updateOffcanvasBody(device);
+    }
   }
 
   if(selectedDeviceSignature &&
@@ -477,6 +518,28 @@ function renderHyperlocalContext() {
   layout.stop();
   layout = cy.elements().makeLayout(options.layout);
   layout.run();
+}
+
+
+// Update the search string
+function updateSearchString() {
+  let searchString = new URLSearchParams();
+
+  if(realTimeUpdates.checked) { 
+    searchString.append(UPDATES_SEARCH_PARAMETER, 'realtime');
+  }
+  else if(periodicUpdates.checked) {
+    searchString.append(UPDATES_SEARCH_PARAMETER, 'periodic');
+  }
+
+  let isEmptySearchString = (Array.from(searchString).length === 0);
+  let url = location.pathname;
+
+  if(!isEmptySearchString) {
+    url += '?' + searchString;
+  }
+
+  history.pushState(null, '', url);
 }
 
 
