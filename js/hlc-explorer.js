@@ -70,6 +70,7 @@ let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
 let devices = {};
+let isFocusId;
 let socket;
 let cy;
 let layout;
@@ -87,9 +88,11 @@ noUpdates.onchange = updateUpdates;
 realTimeUpdates.onchange = updateUpdates;
 periodicUpdates.onchange = updateUpdates;
 
-
 // Monitor button clicks to change focus
 focusId.onclick = updateQuery;
+
+// Monitor offcanvas hide/close
+offcanvas.addEventListener('hidden.bs.offcanvas', handleOffcanvasHide);
 
 
 // Initialisation: poll the context once and display the result
@@ -120,6 +123,7 @@ function init() {
 
   selectedUrl = baseUrl + CONTEXT_ROUTE;
   selectedDeviceSignature = null;
+  isFocusId = false;
   isPollPending = false;
   bsOffcanvas.hide();
 
@@ -210,14 +214,17 @@ function updateQuery(event) {
     case 'focusId':
       selectedUrl = baseUrl + CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
                     selectedDeviceSignature;
+      isFocusId = true;
       break;
     case 'focusTag':
       let tag = event.currentTarget.textContent;
       selectedUrl = baseUrl + CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
+      isFocusId = false;
       break;
     case 'focusDirectory':
       let directory = event.currentTarget.textContent;
       selectedUrl = baseUrl + CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
+      isFocusId = false;
       break;
   }
 
@@ -455,6 +462,19 @@ function handleNodeTap(event) {
   offcanvasTitle.textContent = selectedDeviceSignature;
   updateOffcanvasBody(devices[selectedDeviceSignature]);
   bsOffcanvas.show();
+}
+
+
+// Handle an offcanvas hide
+function handleOffcanvasHide() {
+  if(!isFocusId) {
+    if(selectedDeviceSignature &&
+       (cy.getElementById(selectedDeviceSignature).size() > 0)) {
+      cy.getElementById(selectedDeviceSignature).removeClass('cySelectedNode');
+    }
+
+    selectedDeviceSignature = null;
+  }
 }
 
 
