@@ -476,6 +476,10 @@ function renderHyperlocalContext() {
     let device = devices[deviceSignature];
 
     addDeviceNode(deviceSignature, device);
+
+    if(deviceSignature === selectedDeviceSignature) {
+      updateOffcanvasBody(device);
+    }
   }
 
   if(selectedDeviceSignature &&
