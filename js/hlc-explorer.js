@@ -96,14 +96,14 @@ offcanvas.addEventListener('hidden.bs.offcanvas', handleOffcanvasHide);
 
 
 // Initialisation: poll the context once and display the result
-init();
+init(true);
 
 
 // Initialise to full context, no polling
-function init() {
+function init(isInitialPageLoad) {
   if(socket) { socket.disconnect(); }
 
-  if(hasUpdatesSearch) {
+  if((isInitialPageLoad === true) && hasUpdatesSearch) {
     let selectedUpdates = searchParams.get(UPDATES_SEARCH_PARAMETER);
 
     if(selectedUpdates === 'periodic') {
@@ -121,6 +121,7 @@ function init() {
     noUpdates.checked = true;
     realTimeUpdates.checked = false;
     periodicUpdates.checked = false;
+    realTimeUpdates.disabled = true;
   }
 
   selectedUrl = baseUrl + CONTEXT_ROUTE;
@@ -259,6 +260,8 @@ function updateUpdates(event) {
     pollingInterval = setInterval(pollAndDisplay,
                                   POLLING_INTERVAL_MILLISECONDS);
   }
+
+  updateSearchString();
 }
 
 
@@ -515,6 +518,28 @@ function renderHyperlocalContext() {
   layout.stop();
   layout = cy.elements().makeLayout(options.layout);
   layout.run();
+}
+
+
+// Update the search string
+function updateSearchString() {
+  let searchString = new URLSearchParams();
+
+  if(realTimeUpdates.checked) { 
+    searchString.append(UPDATES_SEARCH_PARAMETER, 'realtime');
+  }
+  else if(periodicUpdates.checked) {
+    searchString.append(UPDATES_SEARCH_PARAMETER, 'periodic');
+  }
+
+  let isEmptySearchString = (Array.from(searchString).length === 0);
+  let url = location.pathname;
+
+  if(!isEmptySearchString) {
+    url += '?' + searchString;
+  }
+
+  history.pushState(null, '', url);
 }
 
 
