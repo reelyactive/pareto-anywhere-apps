@@ -101,6 +101,8 @@ init();
 
 // Initialise to full context, no polling
 function init() {
+  if(socket) { socket.disconnect(); }
+
   if(hasUpdatesSearch) {
     let selectedUpdates = searchParams.get(UPDATES_SEARCH_PARAMETER);
 
@@ -210,11 +212,14 @@ function createSocket() {
 
 // Update the API query/method based on user selection
 function updateQuery(event) {
+  if(socket) { socket.disconnect(); }
+
   switch(event.currentTarget.id) {
     case 'focusId':
       selectedUrl = baseUrl + CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
                     selectedDeviceSignature;
       isFocusId = true;
+      if(realTimeUpdates.checked) { createSocket(); }
       break;
     case 'focusTag':
       let tag = event.currentTarget.textContent;
