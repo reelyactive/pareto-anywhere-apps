@@ -30,15 +30,19 @@ let cuttlefishDynamb = (function() {
                  transform: "toFixed(1)" },
       heartRate: { icon: "fas fa-heartbeat", suffix: " bpm",
                    transform: "toFixed(0)" },
+      illuminance: { icon: "fas fa-sun", suffix: " lx",
+                     transform: "toFixed(0)" },
       interactionDigest: { icon: "fas fa-history", suffix: "interactions",
                            transform: "tableDigest" },
+      isButtonPressed: { icon: "fas fa-hand-pointer", suffix: "",
+                         transform: "booleanArray" },
       magneticField: { icon: "fas fa-magnet", suffix: " G",
                        transform: "progressXYZ" },
       nearest: { icon: "fas fa-people-arrows", suffix: "dBm",
                  transform: "tableNearest" },
       position: { icon: "fas fa-map-pin", suffix: "", transform: "position" },
       pressure: { icon: "fas fa-cloud", suffix: " Pa",
-                  transform: "toFixed(1)" },
+                  transform: "toFixed(0)" },
       relativeHumidity: { icon: "fas fa-water", suffix: " %",
                           transform: "progressPercentage" },
       speed: { icon: "fas fa-tachometer-alt", suffix: " m/s",
@@ -90,6 +94,24 @@ let cuttlefishDynamb = (function() {
     return table;
   }
 
+  // Render a single dynamb property
+  function renderProperty(property, data, target, options) {
+    let isKnownProperty = STANDARD_DATA_PROPERTIES.hasOwnProperty(property);
+    let content = createElement('span', null, data);
+
+    if(isKnownProperty) {
+      let dataRender = STANDARD_DATA_PROPERTIES[property];
+      content = renderAsTransform(dataRender.transform, data,
+                                  dataRender.suffix);
+    }
+
+    if(target) {
+      target.replaceChildren(content);
+    }
+
+    return content; 
+  }
+
   // Render a table row
   function renderAsRow(property, data) {
     let isKnownProperty = STANDARD_DATA_PROPERTIES.hasOwnProperty(property);
@@ -114,6 +136,8 @@ let cuttlefishDynamb = (function() {
     suffix = suffix || '';
 
     switch(transform) {
+      case 'booleanArray':
+        return renderBooleanArray(data);
       case 'unicodeCodePoints':
         return renderUnicodeCodePoints(data);
       case 'position':
@@ -132,6 +156,22 @@ let cuttlefishDynamb = (function() {
       default:
         return data.toString() + suffix;
     }
+  }
+
+  // Render an array of boolean values
+  function renderBooleanArray(values) {
+    let buttons = [];
+
+    for(const value of values) {
+      let iconClass = value ? 'fas fa-check' : 'fas fa-times';
+      let buttonClass = value ? 'btn btn-success' : 'btn btn-outline-info';
+      let icon = createElement('i', iconClass);
+      buttons.push(createElement('button', buttonClass, icon));
+    }
+
+    let buttonGroup = createElement('div', 'btn-group btn-group-sm', buttons);
+
+    return createElement('div', 'btn-toolbar', buttonGroup);
   }
 
   // Render an array of Unicode code points
@@ -265,7 +305,8 @@ let cuttlefishDynamb = (function() {
 
   // Expose the following functions and variables
   return {
-    render: render
+    render: render,
+    renderProperty: renderProperty
   }
 
 }());
