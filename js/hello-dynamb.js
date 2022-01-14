@@ -130,7 +130,7 @@ function updateDisplay() {
   dynambCompilation.forEach((samples, property) => {
     if(DYNAMB_TABLE_MAPPING.hasOwnProperty(property)) {
       let td = document.querySelector(DYNAMB_TABLE_MAPPING[property].data);
-      td.textContent = samples[0].value; // TODO: use cuttlefish
+      cuttlefishDynamb.renderProperty(property, samples[0].value, td);
     }
   });
 
