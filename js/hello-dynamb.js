@@ -8,44 +8,22 @@
 const DYNAMB_ROUTE = '/devices/dynamb';
 const SIGNATURE_SEPARATOR = '/';
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
-const DYNAMB_TABLE_MAPPING = {
-    acceleration: { row: "#accelerationrow", data: "#accelerationdata" },
-    batteryPercentage: { row: "#batterypercentagerow",
-                         data: "#batterypercentagedata" },
-    batteryVoltage: { row: "#batteryvoltagerow", data: "#batteryvoltagedata" },
-    elevation: { row: "#elevationrow", data: "#elevationdata" },
-    heading: { row: "#headingrow", data: "#headingdata" },
-    heartRate: { row: "#heartraterow", data: "#heartratedata" },
-    illuminance: { row: "#illuminancerow", data: "#illuminancedata" },
-    interactionDigest: { row: "#interactiondigestrow",
-                         data: "#interactiondigestdata" },
-    isButtonPressed: { row: "#isbuttonpressedrow",
-                       data: "#isbuttonpresseddata" },
-    magneticField: { row: "#magneticfieldrow", data: "#magneticfielddata" },
-    nearest: { row: "#nearestrow", data: "#nearestdata" },
-    position: { row: "#positionrow", data: "#positiondata" },
-    pressure: { row: "#pressurerow", data: "#pressuredata" },
-    relativeHumidity: { row: "#relativehumidityrow",
-                        data: "#relativehumiditydata" },
-    speed: { row: "#speedrow", data: "#speeddata" },
-    temperature: { row: "#temperaturerow", data: "#temperaturedata" },
-    txCount: { row: "#txcountrow", data: "#txcountdata" },
-    unicodeCodePoints: { row: "#unicodecodepointsrow",
-                         data: "#unicodecodepointsdata" },
-    uptime: { row: "#uptimerow", data: "#uptimedata" }
-};
-
+const DEFAULT_UPDATE_MILLISECONDS = 5000;
+const DEFAULT_COMPILATION_MILLISECONDS = 10000;
+const DYNAMB_DISPLAY_HOLDOFF_MILLISECONDS = 1000;
 
 // DOM elements
 let connection = document.querySelector('#connection');
-let firsthalf = document.querySelector('#firsthalf');
-let secondhalf = document.querySelector('#secondhalf');
+let message = document.querySelector('#message');
+let latestdynamb = document.querySelector('#latestdynamb');
+let propertytable = document.querySelector('#propertytable');
 let time = document.querySelector('#time');
 
-
 // Other variables
-let updateMilliseconds = 5000;
+let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
 let dynambCompilation = new Map();
+let latestDisplayedDynambTimestamp = 0;
+
 
 // Connect to the socket.io stream and handle dynamb events
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -76,7 +54,12 @@ function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
                         dynamb.deviceIdType;
 
-  cuttlefishDynamb.render(dynamb, secondhalf);
+  if(dynamb.timestamp > (latestDisplayedDynambTimestamp +
+                         DYNAMB_DISPLAY_HOLDOFF_MILLISECONDS)) {
+    message.hidden = true;
+    cuttlefishDynamb.render(dynamb, latestdynamb);
+    latestDisplayedDynambTimestamp = dynamb.timestamp;
+  }
 
   for(const property in dynamb) {
     if((property !== 'timestamp') && (property !== 'deviceId') &&
@@ -103,12 +86,18 @@ function update() {
 
   updateCompilation();
   updateDisplay();
+
+  if(latestDisplayedDynambTimestamp < (Date.now() - updateMilliseconds)) {
+    latestdynamb.replaceChildren();
+    message.hidden = false;
+  }
 }
 
 
 // Remove stale samples from the dynamb compilation
 function updateCompilation() {
-  let staleTimestampThreshold = Date.now() - 10000;
+  let staleTimestampThreshold = Date.now() - DEFAULT_COMPILATION_MILLISECONDS;
+
   dynambCompilation.forEach((samples, property) => {
     for(let index = samples.length - 1; index >= 0; index--) {
       let sample = samples[index];
@@ -127,52 +116,59 @@ function updateCompilation() {
 
 // Update the compilation display
 function updateDisplay() {
-  dynambCompilation.forEach((samples, property) => {
-    if(DYNAMB_TABLE_MAPPING.hasOwnProperty(property)) {
-      let td = document.querySelector(DYNAMB_TABLE_MAPPING[property].data);
-      cuttlefishDynamb.renderProperty(property, samples[0].value, td);
-    }
-  });
+  let rows = new DocumentFragment();
 
-  for(const property in DYNAMB_TABLE_MAPPING) {
-    let tr = document.querySelector(DYNAMB_TABLE_MAPPING[property].row);
+  if(dynambCompilation.size > 0) {
+    let sortedDynambCompilation = new Map([...dynambCompilation.entries()]
+                                    .sort((a, b) => b[1].length - a[1].length));
+    let maxCount = [...sortedDynambCompilation][0][1].length;
+  
+    sortedDynambCompilation.forEach((samples, property) => {
+      let i = cuttlefishDynamb.renderIcon(property);
+      let progressBar = createElement('div', 'progress-bar bg-ambient',
+                                      samples.length);
+      let progress = createElement('div', 'progress mb-2', progressBar);
+      let widthPercentage = Math.floor(100 * samples.length / maxCount);
+      let value = cuttlefishDynamb.renderValue(property, samples[0].value);
+      let th = createElement('th',
+                             'w-25 table-light display-6 align-middle mb-1', i);
+      let td = createElement('td', 'w-75 align-middle', [ progress, value ]);
+      let tr = createElement('tr', null, [ th, td ]);
 
-    if(dynambCompilation.has(property)) {
-      tr.hidden = false;
-    }
-    else {
-      tr.hidden = true;
-    }
+      progressBar.setAttribute('style', 'width: ' + widthPercentage + '%');
+      rows.appendChild(tr);
+    });
+
   }
+
+  propertytable.replaceChildren(rows);
 }
 
 
 // Create an element as specified
-function createElement(elementName, classNames) {
+function createElement(elementName, classNames, content) {
   let element = document.createElement(elementName);
 
   if(classNames) {
     element.setAttribute('class', classNames);
   }
-
-  return element;
-}
-
-
-// Create an element, as specified, and append it to the given child
-function append(parent, elementName, content, classNames) {
-  let element = document.createElement(elementName);
 
   if((content instanceof Element) || (content instanceof DocumentFragment)) {
     element.appendChild(content);
   }
-  else {
-    element.textContent = content;
+  else if(Array.isArray(content)) {
+    content.forEach(function(item) {
+      if((item instanceof Element) || (item instanceof DocumentFragment)) {
+        element.appendChild(item);
+      }
+      else {
+        element.appendChild(document.createTextNode(item));
+      }
+    });
+  }
+  else if(content) {
+    element.appendChild(document.createTextNode(content));
   }
 
-  if(classNames) {
-    element.setAttribute('class', classNames);
-  }
-
-  parent.appendChild(element);
+  return element;
 }

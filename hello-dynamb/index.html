@@ -121,8 +121,9 @@
       <div class="row justify-content-center">
         <div class="col-md-12 col-lg-10 col-xl-8 col-xxl-10">
           <div class="row justify-content-between mt-5">
-            <div id="firsthalf" class="col-12 col-xxl-5 mb-5 order-xxl-last">
+            <div class="col-12 col-xxl-5 mb-5 order-xxl-last">
               <table class="table table-hover text-center">
+                <caption class="text-ambient"> <sup>*</sup> Number of dynamb in the last 10 seconds. </caption>
                 <thead>
                   <tr>
                     <td id="time" class="table-dark display-1"
@@ -130,127 +131,22 @@
                   </tr>
                 </thead>
                 <tbody id="propertytable">
-                  <tr id="accelerationrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-rocket"></i>
-                    </th>
-                    <td id="accelerationdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="batterypercentagerow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-battery-half"></i>
-                    </th>
-                    <td id="batterypercentagedata" class="align-middle"></td>
-                  </tr>
-                  <tr id="batteryvoltagerow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-battery-half"></i>
-                    </th>
-                    <td id="batteryvoltagedata" class="align-middle"></td>
-                  </tr>
-                  <tr id="elevationrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-layer-group"></i>
-                    </th>
-                    <td id="elevationdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="headingrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-compass"></i>
-                    </th>
-                    <td id="headingdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="heartraterow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-heartbeat"></i>
-                    </th>
-                    <td id="heartratedata" class="align-middle"></td>
-                  </tr>
-                  <tr id="illuminancerow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-sun"></i>
-                    </th>
-                    <td id="illuminancedata" class="align-middle"></td>
-                  </tr>
-                  <tr id="interactiondigestrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-history"></i>
-                    </th>
-                    <td id="interactiondigestdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="isbuttonpressedrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-hand-pointer"></i>
-                    </th>
-                    <td id="isbuttonpresseddata" class="align-middle"></td>
-                  </tr>
-                  <tr id="magneticfieldrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-magnet"></i>
-                    </th>
-                    <td id="magneticfielddata" class="align-middle"></td>
-                  </tr>
-                  <tr id="nearestrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-people-arrows"></i>
-                    </th>
-                    <td id="nearestdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="positionrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-map-pin"></i>
-                    </th>
-                    <td id="positiondata" class="align-middle"></td>
-                  </tr>
-                  <tr id="pressurerow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-cloud"></i>
-                    </th>
-                    <td id="pressuredata" class="align-middle"></td>
-                  </tr>
-                  <tr id="relativehumidityrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-water"></i>
-                    </th>
-                    <td id="relativehumiditydata" class="align-middle"></td>
-                  </tr>
-                  <tr id="speedrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-tachometer-alt"></i>
-                    </th>
-                    <td id="speeddata" class="align-middle"></td>
-                  </tr>
-                  <tr id="temperaturerow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-thermometer-half"></i>
-                    </th>
-                    <td id="temperaturedata" class="align-middle"></td>
-                  </tr>
-                  <tr id="txcountrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-wifi"></i>
-                    </th>
-                    <td id="txcountdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="unicodecodepointsrow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-language"></i>
-                    </th>
-                    <td id="unicodecodepointsdata" class="align-middle"></td>
-                  </tr>
-                  <tr id="uptimerow">
-                    <th class="w-25 table-light display-6 align-middle mb-1">
-                      <i class="fas fa-stopwatch"></i>
-                    </th>
-                    <td id="uptimedata" class="align-middle"></td>
-                  </tr>
                 </tbody>
               </table>
             </div>
-            <div id="secondhalf" class="col-12 col-xxl-5">
-              <h2 class="text-muted animate-breathing">
-                Waiting for dynamic ambient (dynamb) data...
+            <div class="col-12 col-xxl-5">
+              <table class="table table-hover text-center">
+                <thead>
+                  <tr>
+                    <td class="display-1 text-ambient"> dynamb </td>
+                  </tr>
+                </thead>
+              </table>
+              <h2 id="message" class="text-muted animate-breathing mt-4">
+                Waiting for <em>dyn</em>amic <em>amb</em>ient data...
               </h2>
+              <div id="latestdynamb">
+              </div>
             </div>
           </div>
         </div>
