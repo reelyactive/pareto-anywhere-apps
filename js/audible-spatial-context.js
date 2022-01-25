@@ -9,6 +9,7 @@ const SIGNATURE_SEPARATOR = '/';
 const DEFAULT_FADE_IN_SECONDS = 3;
 const DEFAULT_FADE_OUT_SECONDS = 3;
 const STALE_THRESHOLD_MILLISECONDS = 10000;
+const MAX_VOLUME_RSSI = -45;
 
 // DOM elements
 let welcomeCard = document.querySelector('#welcome');
@@ -42,10 +43,15 @@ socket.on("disconnect", function(reason) {
 function handleRaddec(raddec) {
   let transmitterSignature = raddec.transmitterId + SIGNATURE_SEPARATOR +
                              raddec.transmitterIdType;
+  let rssi = raddec.rssiSignature[0].rssi;
 
-  updateAudibleDevices(transmitterSignature, raddec.timestamp);
+  updateAudibleDevices(transmitterSignature, raddec.timestamp, rssi);
 
-  // TODO: loop through rssiSignature
+  for(const decoding of raddec.rssiSignature) {
+    let receiverSignature = decoding.receiverId + SIGNATURE_SEPARATOR +
+                            decoding.receiverIdType;
+    updateAudibleDevices(receiverSignature, raddec.timestamp, decoding.rssi);
+  }
 }
 
 
@@ -56,19 +62,29 @@ function handleDynamb(dynamb) {
 
   updateAudibleDevices(deviceSignature, dynamb.timestamp);
 
-  // TODO: loop through nearest, if present
+  if(dynamb.hasOwnProperty('nearest')) {
+    for(const peer of dynamb.nearest) {
+      updateAudibleDevices(peer.deviceId, dynamb.timestamp, peer.rssi);
+    }
+  }
 }
 
 
 // Update the list of audible devices based on the device signature
-function updateAudibleDevices(deviceSignature, timestamp) {
+function updateAudibleDevices(deviceSignature, timestamp, rssi) {
   let isKnownAudibleDevice = audibleDevices.has(deviceSignature);
+  let volume = 0;
+
+  if(rssi) {
+    volume = Math.min(rssi - MAX_VOLUME_RSSI, 0);
+  }
 
   if(isKnownAudibleDevice) {
     let audibleDevice = audibleDevices.get(deviceSignature);
 
     if(timestamp > audibleDevice.lastEventTimestamp) {
       audibleDevice.lastEventTimestamp = timestamp;
+      audibleDevice.player.volume.value = volume;
     }
   }
   else {
@@ -80,6 +96,7 @@ function updateAudibleDevices(deviceSignature, timestamp) {
 
         player.autostart = true;
         player.loop = true;
+        player.volume.value = volume;
         player.fadeIn = DEFAULT_FADE_IN_SECONDS;
         player.fadeOut = DEFAULT_FADE_OUT_SECONDS;
         audibleDevices.set(deviceSignature, audibleDevice);
