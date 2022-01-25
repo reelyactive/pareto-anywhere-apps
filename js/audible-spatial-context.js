@@ -6,6 +6,9 @@
 
 // Constants
 const SIGNATURE_SEPARATOR = '/';
+const DEFAULT_FADE_IN_SECONDS = 3;
+const DEFAULT_FADE_OUT_SECONDS = 3;
+const STALE_THRESHOLD_MILLISECONDS = 10000;
 
 // DOM elements
 let welcomeCard = document.querySelector('#welcome');
@@ -77,6 +80,8 @@ function updateAudibleDevices(deviceSignature, timestamp) {
 
         player.autostart = true;
         player.loop = true;
+        player.fadeIn = DEFAULT_FADE_IN_SECONDS;
+        player.fadeOut = DEFAULT_FADE_OUT_SECONDS;
         audibleDevices.set(deviceSignature, audibleDevice);
       }
     });
@@ -117,8 +122,18 @@ function retrieveAudioUrl(transmitterSignature, callback) {
 
 // Update the audio playback based on the current spatial context
 function updateAudioPlayback() {
+  let staleTimestampThreshold = Date.now() - STALE_THRESHOLD_MILLISECONDS;
+
   audibleDevices.forEach((audibleDevice) => {
-    // TODO: manage disappearance and fade out
+    let isStale = (audibleDevice.lastEventTimestamp < staleTimestampThreshold);
+    let isPlaying = (audibleDevice.player.state === 'started');
+
+    if(isPlaying && isStale) {
+      audibleDevice.player.stop();
+    }
+    else if(!isPlaying && !isStale) {
+      audibleDevice.player.start();
+    }
   });
 }
 
