@@ -8,8 +8,10 @@
 const SIGNATURE_SEPARATOR = '/';
 const DEFAULT_FADE_IN_SECONDS = 3;
 const DEFAULT_FADE_OUT_SECONDS = 3;
+const AUDIO_UPDATE_MILLISECONDS = 500;
 const STALE_THRESHOLD_MILLISECONDS = 10000;
-const MAX_VOLUME_RSSI = -45;
+const MAX_VOLUME_RSSI = -60;
+const MAX_VOLUME_CHANGE_DECIBELS = 1;
 const DEVICE_SIGNATURE_SEARCH_PARAMETER = 'deviceSignature';
 
 // DOM elements
@@ -92,10 +94,10 @@ function handleDynamb(dynamb) {
 // Update the list of audible devices based on the device signature
 function updateAudibleDevices(deviceSignature, timestamp, rssi) {
   let isKnownAudibleDevice = audibleDevices.has(deviceSignature);
-  let volume = 0;
+  let targetVolume = 0;
 
   if(rssi) {
-    volume = Math.min(rssi - MAX_VOLUME_RSSI, 0);
+    targetVolume = Math.min(rssi - MAX_VOLUME_RSSI, 0);
   }
 
   if(isKnownAudibleDevice) {
@@ -103,7 +105,7 @@ function updateAudibleDevices(deviceSignature, timestamp, rssi) {
 
     if(timestamp > audibleDevice.lastEventTimestamp) {
       audibleDevice.lastEventTimestamp = timestamp;
-      audibleDevice.player.volume.value = volume;
+      audibleDevice.targetVolume = targetVolume;
     }
   }
   else {
@@ -111,11 +113,12 @@ function updateAudibleDevices(deviceSignature, timestamp, rssi) {
       if(audioUrl) {
         const player = new Tone.Player(audioUrl).toDestination();
         let audibleDevice = { player: player,
+                              targetVolume: targetVolume,
                               lastEventTimestamp: timestamp };
 
         player.autostart = true;
         player.loop = true;
-        player.volume.value = volume;
+        player.volume.value = targetVolume;
         player.fadeIn = DEFAULT_FADE_IN_SECONDS;
         player.fadeOut = DEFAULT_FADE_OUT_SECONDS;
         audibleDevices.set(deviceSignature, audibleDevice);
@@ -167,6 +170,20 @@ function updateAudioPlayback() {
     if(isPlaying && isStale) {
       audibleDevice.player.stop();
     }
+    else if(isPlaying) {
+      let volume = audibleDevice.player.volume.value;
+
+      if(volume < audibleDevice.targetVolume) {
+        volume = Math.min(volume + MAX_VOLUME_CHANGE_DECIBELS,
+                          audibleDevice.targetVolume);
+      }
+      else if(volume > audibleDevice.targetVolume) {
+        volume = Math.max(volume - MAX_VOLUME_CHANGE_DECIBELS,
+                          audibleDevice.targetVolume);
+      }
+
+      audibleDevice.player.volume.value = volume;
+    }
     else if(!isPlaying && !isStale) {
       audibleDevice.player.start();
     }
@@ -209,5 +226,5 @@ enableAudioButton.addEventListener('click', async function() {
   isAudioEnabled = true;
   welcomeCard.hidden = true;
   console.log('Tone.js started. Audio is ready.');
-  setInterval(updateAudioPlayback, 1000);
+  setInterval(updateAudioPlayback, AUDIO_UPDATE_MILLISECONDS);
 });
