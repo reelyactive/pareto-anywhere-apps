@@ -10,6 +10,7 @@ const DEFAULT_FADE_IN_SECONDS = 3;
 const DEFAULT_FADE_OUT_SECONDS = 3;
 const STALE_THRESHOLD_MILLISECONDS = 10000;
 const MAX_VOLUME_RSSI = -45;
+const DEVICE_SIGNATURE_SEARCH_PARAMETER = 'deviceSignature';
 
 // DOM elements
 let welcomeCard = document.querySelector('#welcome');
@@ -18,6 +19,13 @@ let enableAudioButton = document.querySelector('#enableaudio');
 // Other variables
 let isAudioEnabled = false;
 let audibleDevices = new Map();
+
+
+// Initialise based on URL search parameters, if any
+let searchParams = new URLSearchParams(location.search);
+let hasTargetDevice = searchParams.has(DEVICE_SIGNATURE_SEARCH_PARAMETER);
+let targetDeviceSignature = searchParams.get(DEVICE_SIGNATURE_SEARCH_PARAMETER);
+
 
 // Connect to the socket.io stream and feed to beaver
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -43,6 +51,11 @@ socket.on("disconnect", function(reason) {
 function handleRaddec(raddec) {
   let transmitterSignature = raddec.transmitterId + SIGNATURE_SEPARATOR +
                              raddec.transmitterIdType;
+
+  if(hasTargetDevice && (transmitterSignature !== targetDeviceSignature)) {
+    return;
+  }
+
   let rssi = raddec.rssiSignature[0].rssi;
 
   updateAudibleDevices(transmitterSignature, raddec.timestamp, rssi);
@@ -59,6 +72,10 @@ function handleRaddec(raddec) {
 function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
                         dynamb.deviceIdType;
+
+  if(hasTargetDevice && (deviceSignature !== targetDeviceSignature)) {
+    return;
+  }
 
   updateAudibleDevices(deviceSignature, dynamb.timestamp);
 
