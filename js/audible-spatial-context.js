@@ -8,6 +8,7 @@
 const SIGNATURE_SEPARATOR = '/';
 const DEFAULT_FADE_IN_SECONDS = 3;
 const DEFAULT_FADE_OUT_SECONDS = 3;
+const MAX_CONCURRENT_PLAYERS = 3;
 const AUDIO_UPDATE_MILLISECONDS = 500;
 const STALE_THRESHOLD_MILLISECONDS = 10000;
 const MAX_VOLUME_RSSI = -60;
@@ -161,33 +162,43 @@ function retrieveAudioUrl(transmitterSignature, callback) {
 
 // Update the audio playback based on the current spatial context
 function updateAudioPlayback() {
-  let staleTimestampThreshold = Date.now() - STALE_THRESHOLD_MILLISECONDS;
+  if(audibleDevices.size > 0) {
+    let concurrentPlayingCount = 0;
+    let staleTimestampThreshold = Date.now() - STALE_THRESHOLD_MILLISECONDS;
+    let loudestAudibleDevices = new Map([...audibleDevices.entries()]
+                        .sort((a, b) => b[1].targetVolume - a[1].targetVolume));
 
-  audibleDevices.forEach((audibleDevice) => {
-    let isStale = (audibleDevice.lastEventTimestamp < staleTimestampThreshold);
-    let isPlaying = (audibleDevice.player.state === 'started');
+    loudestAudibleDevices.forEach((audibleDevice) => {
+      let isStale = (audibleDevice.lastEventTimestamp <
+                                                       staleTimestampThreshold);
+      let isPlaying = (audibleDevice.player.state === 'started');
+      let isValidConcurrent = (concurrentPlayingCount < MAX_CONCURRENT_PLAYERS);
 
-    if(isPlaying && isStale) {
-      audibleDevice.player.stop();
-    }
-    else if(isPlaying) {
-      let volume = audibleDevice.player.volume.value;
-
-      if(volume < audibleDevice.targetVolume) {
-        volume = Math.min(volume + MAX_VOLUME_CHANGE_DECIBELS,
-                          audibleDevice.targetVolume);
+      if(isPlaying && isStale) {
+        audibleDevice.player.stop();
       }
-      else if(volume > audibleDevice.targetVolume) {
-        volume = Math.max(volume - MAX_VOLUME_CHANGE_DECIBELS,
-                          audibleDevice.targetVolume);
-      }
+      else if(isPlaying) {
+        let volume = audibleDevice.player.volume.value;
 
-      audibleDevice.player.volume.value = volume;
-    }
-    else if(!isPlaying && !isStale) {
-      audibleDevice.player.start();
-    }
-  });
+        if(volume < audibleDevice.targetVolume) {
+          volume = Math.min(volume + MAX_VOLUME_CHANGE_DECIBELS,
+                            audibleDevice.targetVolume);
+        }
+        else if(volume > audibleDevice.targetVolume) {
+          volume = Math.max(volume - MAX_VOLUME_CHANGE_DECIBELS,
+                            audibleDevice.targetVolume);
+        }
+
+        audibleDevice.player.volume.value = volume;
+        audibleDevice.player.mute = !isValidConcurrent;
+        concurrentPlayingCount++;
+      }
+      else if(!isPlaying && !isStale && isValidConcurrent) {
+        audibleDevice.player.start();
+        concurrentPlayingCount++;
+      }
+    });
+  }
 }
 
 
