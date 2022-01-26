@@ -64,7 +64,9 @@ function handleDynamb(dynamb) {
 
   if(dynamb.hasOwnProperty('nearest')) {
     for(const peer of dynamb.nearest) {
-      updateAudibleDevices(peer.deviceId, dynamb.timestamp, peer.rssi);
+      let peerSignature = peer.deviceId + SIGNATURE_SEPARATOR +
+                          (peer.deviceIdType || '0'); // Hack!
+      updateAudibleDevices(peerSignature, dynamb.timestamp, peer.rssi);
     }
   }
 }
