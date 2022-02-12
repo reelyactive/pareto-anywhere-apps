@@ -12,10 +12,19 @@ const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 // DOM elements
 let connection = document.querySelector('#connection');
 let occupancytable = document.querySelector('#occupancytable');
+let chairsoccupied = document.querySelector('#chairsoccupied');
+let chairsavailable = document.querySelector('#chairsavailable');
+let desksoccupied = document.querySelector('#desksoccupied');
+let desksavailable = document.querySelector('#desksavailable');
+let roomsoccupied = document.querySelector('#roomsoccupied');
+let roomsavailable = document.querySelector('#roomsavailable');
 let time = document.querySelector('#time');
 
 // Other variables
 let occupancyCompilation = new Map();
+let assetStatus = { chairsOccupied: 0, chairsAvailable: 0,
+                    desksoccupied: 0, desksAvailable: 0,
+                    roomsOccupied: 0, roomsAvailable: 0 };
 
 
 // Connect to the socket.io stream and handle dynamb events
@@ -54,12 +63,39 @@ function handleDynamb(dynamb) {
       status.current = isMotionDetected;
     }
     else {
-      status = { current: isMotionDetected, previous: [ null, null, null ] };
+      status = { current: isMotionDetected,
+                 previous: [ null, null, null ],
+                 tags: [] };
+      retrieveMetadata(deviceSignature);
     }
 
     updateOccupancyRow(status, deviceSignature);
     occupancyCompilation.set(deviceSignature, status);
   }
+}
+
+
+// Retrieve the associations and story, if any, for the given device
+function retrieveMetadata(deviceSignature) {
+  cormorant.retrieveAssociations(baseUrl, deviceSignature, true,
+                                 function(associations, story) {
+    if(associations) { 
+      let status = occupancyCompilation.get(deviceSignature) ||
+                   { current: null, previous: [ null, null, null ], tags: [] };
+
+      if(Array.isArray(associations.tags)) {
+        if(associations.tags.includes('chair')) { status.tags.push('chair'); }
+        if(associations.tags.includes('desk')) { status.tags.push('desk'); }
+        if(associations.tags.includes('room')) { status.tags.push('room'); }
+      }
+
+      if(story) {
+        status.title = cuttlefishStory.determineTitle(story) || deviceSignature;
+      }
+
+      occupancyCompilation.set(deviceSignature, status);
+    }
+  });
 }
 
 
@@ -75,9 +111,26 @@ function update() {
 }
 
 
-// Remove stale samples from the dynamb compilation
+// Update isMotionDetected samples and chair/desk/room stats
 function updateCompilation() {
+  assetStatus.chairsOccupied = 0;
+  assetStatus.chairsAvailable = 0;
+  assetStatus.desksOccupied = 0;
+  assetStatus.desksAvailable = 0;
+  assetStatus.roomsOccupied = 0;
+  assetStatus.roomsAvailable = 0;
+
   occupancyCompilation.forEach((status, deviceSignature) => {
+    if(status.current === true) {
+      if(status.tags.includes('chair')) { assetStatus.chairsOccupied++; }
+      if(status.tags.includes('desk')) { assetStatus.desksOccupied++; }
+      if(status.tags.includes('room')) { assetStatus.roomsOccupied++; }   
+    }
+    else if(status.current === false) {
+      if(status.tags.includes('chair')) { assetStatus.chairsAvailable++; }
+      if(status.tags.includes('desk')) { assetStatus.desksAvailable++; }
+      if(status.tags.includes('room')) { assetStatus.roomsAvailable++; }   
+    }
     status.previous.pop();
     status.previous.unshift(status.current);
     status.current = null;
@@ -88,6 +141,49 @@ function updateCompilation() {
 // Update the compilation display
 function updateDisplay() {
   occupancyCompilation.forEach(updateOccupancyRow);
+
+  let totalChairs = assetStatus.chairsOccupied + assetStatus.chairsAvailable;
+  let totalDesks = assetStatus.desksOccupied + assetStatus.desksAvailable;
+  let totalRooms = assetStatus.roomsOccupied + assetStatus.roomsAvailable;
+
+  if(totalChairs === 0) {
+    chairsoccupied.setAttribute('style', 'width:0%;');
+    chairsavailable.setAttribute('style', 'width:0%;');
+  }
+  else {
+    let occupied = Math.round(100 * assetStatus.chairsOccupied / totalChairs); 
+    let available = Math.round(100 * assetStatus.chairsAvailable / totalChairs);
+    chairsoccupied.setAttribute('style', 'width:' + occupied + '%;');
+    chairsavailable.setAttribute('style', 'width:' + available + '%;');
+  }
+  chairsoccupied.textContent = assetStatus.chairsOccupied;
+  chairsavailable.textContent = assetStatus.chairsAvailable;
+
+  if(totalDesks === 0) {
+    desksoccupied.setAttribute('style', 'width:0%;');
+    desksavailable.setAttribute('style', 'width:0%;');
+  }
+  else {
+    let occupied = Math.round(100 * assetStatus.desksOccupied / totalDesks); 
+    let available = Math.round(100 * assetStatus.desksAvailable / totalDesks);
+    desksoccupied.setAttribute('style', 'width:' + occupied + '%;');
+    desksavailable.setAttribute('style', 'width:' + available + '%;');
+  }
+  desksoccupied.textContent = assetStatus.desksOccupied;
+  desksavailable.textContent = assetStatus.desksAvailable;
+
+  if(totalRooms === 0) {
+    roomsoccupied.setAttribute('style', 'width:0%;');
+    roomsavailable.setAttribute('style', 'width:0%;');
+  }
+  else {
+    let occupied = Math.round(100 * assetStatus.roomsOccupied / totalRooms); 
+    let available = Math.round(100 * assetStatus.roomsAvailable / totalRooms);
+    roomsoccupied.setAttribute('style', 'width:' + occupied + '%;');
+    roomsavailable.setAttribute('style', 'width:' + available + '%;');
+  }
+  roomsoccupied.textContent = assetStatus.roomsOccupied;
+  roomsavailable.textContent = assetStatus.roomsAvailable;
 }
 
 
@@ -98,6 +194,9 @@ function updateOccupancyRow(status, deviceSignature) {
   if(tr) {
     let tds = tr.getElementsByTagName('td');
 
+    if(status.title) {
+      tds[0].replaceChildren(status.title);
+    }
     if(status.current !== null) {
       tds[1].replaceChildren(createOccupancyIcon(status.current));
     }
@@ -110,7 +209,7 @@ function updateOccupancyRow(status, deviceSignature) {
   }
   else {
     let tds = [
-      createElement('td', null, deviceSignature),
+      createElement('td', null, status.title || deviceSignature),
       createElement('td', 'animate-breathing',
                     createOccupancyIcon(status.current)),
       createElement('td', 'table-info',

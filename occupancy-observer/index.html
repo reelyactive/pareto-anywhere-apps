@@ -141,6 +141,73 @@
               </table>
             </div>
             <div class="col-12 col-xxl-5">
+              <div class="card">
+                <div class="row g-0">
+                  <div class="col-md-4 bg-ambient text-white text-center py-3">
+                    <span class="display-6"> Chairs </span>
+                  </div>
+                  <div class="col-md-8 d-flex align-items-center">
+                    <div class="card-body">
+                      <div class="progress">
+                        <div class="progress-bar bg-secondary"
+                             id="chairsoccupied" role="progressbar"
+                             style="width:0%;"></div>
+                        <div class="progress-bar bg-success"
+                             id="chairsavailable" role="progressbar"
+                             style="width:0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card my-5">
+                <div class="row g-0">
+                  <div class="col-md-4 bg-ambient text-white text-center py-3">
+                    <span class="display-6"> Desks </span>
+                  </div>
+                  <div class="col-md-8 d-flex align-items-center">
+                    <div class="card-body">
+                      <div class="progress">
+                        <div class="progress-bar bg-secondary"
+                             id="desksoccupied" role="progressbar"
+                             style="width:0%;"></div>
+                        <div class="progress-bar bg-success"
+                             id="desksavailable" role="progressbar"
+                             style="width:0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card my-5">
+                <div class="row g-0">
+                  <div class="col-md-4 bg-ambient text-white text-center py-3">
+                    <span class="display-6"> Rooms </span>
+                  </div>
+                  <div class="col-md-8 d-flex align-items-center">
+                    <div class="card-body">
+                      <div class="progress">
+                        <div class="progress-bar bg-secondary"
+                             id="roomsoccupied" role="progressbar"
+                             style="width:0%;"></div>
+                        <div class="progress-bar bg-success"
+                             id="roomsavailable" role="progressbar"
+                             style="width:0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="lead text-muted text-end">
+                <span class="badge rounded-pill bg-secondary">
+                  <i class="fas fa-walking"></i>
+                </span>
+                Occupied &nbsp;
+                <span class="badge rounded-pill bg-success">
+                  <i class="fas fa-times"></i>
+                </span>
+                Available
+              </p>
             </div>
           </div>
         </div>
@@ -158,6 +225,8 @@
     <script defer src="../js/fontawesome-reelyactive.min.js"></script>
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
     <script src="../js/socket.io.min.js"></script>
+    <script src="../js/cormorant.js"></script>
+    <script src="../js/cuttlefish-story.js"></script>
     <script src="../js/occupancy-observer.js"></script>
   </body>
 </html>
