@@ -52,6 +52,7 @@ let reinitialise = document.querySelector('#reinitialise');
 let noUpdates = document.querySelector('#settingsNoUpdates');
 let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
 let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
+let searchRoute = document.querySelector('#searchRoute');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
@@ -64,7 +65,7 @@ let dynambDisplay = document.querySelector('#dynambDisplay');
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
-let selectedUrl = baseUrl + CONTEXT_ROUTE;
+let selectedRoute = CONTEXT_ROUTE;
 let isPollPending = false;
 let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
@@ -124,7 +125,8 @@ function init(isInitialPageLoad) {
     realTimeUpdates.disabled = true;
   }
 
-  selectedUrl = baseUrl + CONTEXT_ROUTE;
+  selectedRoute = CONTEXT_ROUTE;
+  searchRoute.textContent = selectedRoute;
   selectedDeviceSignature = null;
   isFocusId = false;
   isPollPending = false;
@@ -143,7 +145,7 @@ function pollAndDisplay() {
   if(!isPollPending) {
     isPollPending = true;
 
-    getContext(selectedUrl, function(status, response) {
+    getContext(baseUrl + selectedRoute, function(status, response) {
       let statusIcon = createElement('i', 'fas fa-cloud text-danger');
       devices = response.devices || {};
       isPollPending = false;
@@ -182,7 +184,7 @@ function getContext(url, callback) {
 
 // Create and manage a socket.io connection
 function createSocket() {
-  socket = io(selectedUrl);
+  socket = io(baseUrl + selectedRoute);
 
   socket.on('connect', function() {
     connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
@@ -217,23 +219,24 @@ function updateQuery(event) {
 
   switch(event.currentTarget.id) {
     case 'focusId':
-      selectedUrl = baseUrl + CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
-                    selectedDeviceSignature;
+      selectedRoute = CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
+                      selectedDeviceSignature;
       isFocusId = true;
       if(realTimeUpdates.checked) { createSocket(); }
       break;
     case 'focusTag':
       let tag = event.currentTarget.textContent;
-      selectedUrl = baseUrl + CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
+      selectedRoute = CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
       isFocusId = false;
       break;
     case 'focusDirectory':
       let directory = event.currentTarget.textContent;
-      selectedUrl = baseUrl + CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
+      selectedRoute = CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
       isFocusId = false;
       break;
   }
 
+  searchRoute.textContent = selectedRoute;
   realTimeUpdates.disabled = false;
   pollAndDisplay();
 }
