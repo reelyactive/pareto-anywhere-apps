@@ -14,6 +14,7 @@ const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';
 const TAG_ROUTE = '/tag';
 const UPDATES_SEARCH_PARAMETER = 'updates';
+const TIME_OPTIONS = { hour12: false };
 const MAX_RSSI = -30;
 const HLC_MIN_HEIGHT_PX = 480;
 const HLC_UNUSABLE_HEIGHT_PX = 120;
@@ -53,6 +54,7 @@ let noUpdates = document.querySelector('#settingsNoUpdates');
 let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
 let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
 let searchRoute = document.querySelector('#searchRoute');
+let time = document.querySelector('#time');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
@@ -521,6 +523,7 @@ function renderHyperlocalContext() {
   layout.stop();
   layout = cy.elements().makeLayout(options.layout);
   layout.run();
+  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 }
 
 
