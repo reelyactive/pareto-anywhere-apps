@@ -259,9 +259,28 @@
               </li>
             </ul>
             <div class="tab-content tab-content-border">
+              <!-- Story tab -->
               <div class="tab-pane fade show active" id="storycontent"
                    role="tabpanel" aria-labelledby="storytab">
-                <p> ... </p>
+                <form class="my-2" onsubmit="return false;">
+                  <select class="form-select mb-2" id="inputSelectType"
+                          aria-label="Story type">
+                    <option value="Product" selected> Product </option>
+                    <option value="Person">Person</option>
+                    <option value="Place">Place</option>
+                  </select>
+                  <div class="input-group mb-2">
+                    <span class="input-group-text"> Name </span>
+                    <input class="form-control" id="inputName" type="text"
+                           aria-label="Name">
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-sm btn-primary"
+                            id="createStory">
+                      Store & Associate
+                    </button>
+                  </div>
+                </form>
               </div>
               <!-- Associations tab -->
               <div class="tab-pane fade" id="associationscontent"

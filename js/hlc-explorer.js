@@ -20,6 +20,7 @@ const ASSOCIATIONS_ROUTE = '/associations';
 const URL_ROUTE = '/url';
 const TAGS_ROUTE = '/tags';
 const POSITION_ROUTE = '/position';
+const STORIES_ROUTE = '/stories';
 const MESSAGE_BAD_REQUEST = 'Error: Bad Request [400].';
 const MESSAGE_NOT_FOUND = 'Error: Not Found [404].';
 const UPDATES_SEARCH_PARAMETER = 'updates';
@@ -72,6 +73,7 @@ let focusId = document.querySelector('#focusId');
 let focusTagsList = document.querySelector('#focusTagsList');
 let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
 let dynambDisplay = document.querySelector('#dynambDisplay');
+let createStory = document.querySelector('#createStory');
 let inputUrl = document.querySelector('#inputUrl');
 let inputTags = document.querySelector('#inputTags');
 let inputDirectory = document.querySelector('#inputDirectory');
@@ -103,6 +105,7 @@ let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
 
 // Monitor reinitialise buttons
 reinitialise.onclick = init;
+createStory.onclick = createAndAssociateStory;
 
 // Monitor each settings radio button
 noUpdates.onchange = updateUpdates;
@@ -578,6 +581,48 @@ function setContainerHeight() {
   let height = Math.max(window.innerHeight - HLC_UNUSABLE_HEIGHT_PX,
                         HLC_MIN_HEIGHT_PX) + 'px';
   container.setAttribute('style', 'height:' + height);
+}
+
+
+// Create and associate the story given in the form
+function createAndAssociateStory() {
+  let name = inputName.value;
+  let id = name.toLowerCase();
+  let type = 'schema:' + inputSelectType.value;
+  let json = {
+      "@context": {
+        "schema": "http://schema.org/"
+      },
+      "@graph": [
+        {
+          "@id": id,
+          "@type": type,
+          "schema:name": name
+        }
+      ]
+  };
+
+  let httpRequest = new XMLHttpRequest();
+
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if(httpRequest.status === STATUS_CREATED) {
+        let response = JSON.parse(httpRequest.responseText);
+        let storyId = Object.keys(response.stories)[0];
+        let storyUrl = baseUrl + STORIES_ROUTE + '/' + storyId;
+
+        putAssociationProperty(URL_ROUTE, { url: storyUrl },
+                               handlePropertyUpdate);
+      }
+      else {
+        // TODO: story creation failed
+      }
+    }
+  };
+  httpRequest.open('POST', baseUrl + STORIES_ROUTE);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(JSON.stringify(json));
 }
 
 
