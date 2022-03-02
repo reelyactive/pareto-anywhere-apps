@@ -6,6 +6,9 @@
 
 // Constants
 const STATUS_OK = 200;
+const STATUS_CREATED = 201;
+const STATUS_BAD_REQUEST = 400;
+const STATUS_NOT_FOUND = 404;
 const SIGNATURE_SEPARATOR = '/';
 const DIRECTORY_SEPARATOR = ':';
 const POLLING_INTERVAL_MILLISECONDS = 10000;
@@ -13,6 +16,12 @@ const CONTEXT_ROUTE = '/context';
 const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';
 const TAG_ROUTE = '/tag';
+const ASSOCIATIONS_ROUTE = '/associations';
+const URL_ROUTE = '/url';
+const TAGS_ROUTE = '/tags';
+const POSITION_ROUTE = '/position';
+const MESSAGE_BAD_REQUEST = 'Error: Bad Request [400].';
+const MESSAGE_NOT_FOUND = 'Error: Not Found [404].';
 const UPDATES_SEARCH_PARAMETER = 'updates';
 const TIME_OPTIONS = { hour12: false };
 const MAX_RSSI = -30;
@@ -63,6 +72,15 @@ let focusId = document.querySelector('#focusId');
 let focusTagsList = document.querySelector('#focusTagsList');
 let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
 let dynambDisplay = document.querySelector('#dynambDisplay');
+let inputUrl = document.querySelector('#inputUrl');
+let inputTags = document.querySelector('#inputTags');
+let inputDirectory = document.querySelector('#inputDirectory');
+let inputPosition = document.querySelector('#inputPosition');
+let updateUrl = document.querySelector('#updateUrl');
+let updateTags = document.querySelector('#updateTags');
+let updateDirectory = document.querySelector('#updateDirectory');
+let updatePosition = document.querySelector('#updatePosition');
+let associationError = document.querySelector('#associationError');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -83,7 +101,7 @@ let searchParams = new URLSearchParams(location.search);
 let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
 
 
-// Monitor reinitialisation button
+// Monitor reinitialise buttons
 reinitialise.onclick = init;
 
 // Monitor each settings radio button
@@ -403,6 +421,11 @@ function updateOffcanvasBody(device) {
     storyDisplay.replaceChildren();
   }
 
+  inputUrl.value = device.url || '';
+  inputTags.value = device.tags || '';
+  inputDirectory.value = device.directory || '';
+  inputPosition.value = device.position || '';
+
   if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
     device.tags.forEach(function(tag) {
       let li = createElement('li');
@@ -556,6 +579,90 @@ function setContainerHeight() {
                         HLC_MIN_HEIGHT_PX) + 'px';
   container.setAttribute('style', 'height:' + height);
 }
+
+
+// PUT the given association property
+function putAssociationProperty(route, json, callback) {
+  let url = baseUrl + ASSOCIATIONS_ROUTE + '/' + selectedDeviceSignature +
+            route;
+  let httpRequest = new XMLHttpRequest();
+  let jsonString = JSON.stringify(json);
+
+  associationError.hidden = true;
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if((httpRequest.status === STATUS_OK) ||
+         (httpRequest.status === STATUS_CREATED)) {
+        return callback(httpRequest.status,
+                        JSON.parse(httpRequest.responseText));
+      }
+      else {
+        return callback(httpRequest.status);
+      }
+    }
+  };
+  httpRequest.open('PUT', url);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(jsonString);
+}
+
+
+// Handle the update of an association property
+function handlePropertyUpdate(status, response) {
+  if(status === STATUS_OK) {
+    deviceIdSignature = Object.keys(response.associations)[0];
+    let deviceAssociations = response.associations[deviceIdSignature];
+    inputUrl.value = deviceAssociations.url || '';
+    inputTags.value = deviceAssociations.tags || '';
+    inputDirectory.value =  deviceAssociations.directory || '';
+    inputPosition.value = deviceAssociations.position || '';
+  }
+  else if(status === STATUS_BAD_REQUEST) {
+    associationErrorMessage.textContent = MESSAGE_BAD_REQUEST;
+    associationError.hidden = false;
+  }
+  else if(status === STATUS_NOT_FOUND) {
+    associationErrorMessage.textContent = MESSAGE_NOT_FOUND;
+    associationError.hidden = false;
+  }
+}
+
+
+// Association update functions (by property)
+let associationActions = {
+    "url":
+       function() {
+         let json = { url: inputUrl.value };
+         putAssociationProperty(URL_ROUTE, json, handlePropertyUpdate);
+       },
+    "tags":
+       function() {
+         let json = { tags: inputTags.value.split(',') };
+         putAssociationProperty(TAGS_ROUTE, json, handlePropertyUpdate);
+       },
+    "directory":
+       function() {
+         let json = { directory: inputDirectory.value };
+         putAssociationProperty(DIRECTORY_ROUTE, json, handlePropertyUpdate);
+       },
+    "position":
+       function() {
+         let positionArray = [];
+
+         inputPosition.value.split(',').forEach(function(coordinate) {
+           positionArray.push(parseFloat(coordinate));
+         });
+
+         let json = { position: positionArray };
+         putAssociationProperty(POSITION_ROUTE, json, handlePropertyUpdate);
+       }
+};
+
+updateUrl.onclick = associationActions['url'];
+updateTags.onclick = associationActions['tags'];
+updateDirectory.onclick = associationActions['directory'];
+updatePosition.onclick = associationActions['position'];
 
 
 // Create an element as specified
