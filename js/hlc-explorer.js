@@ -21,6 +21,7 @@ const URL_ROUTE = '/url';
 const TAGS_ROUTE = '/tags';
 const POSITION_ROUTE = '/position';
 const STORIES_ROUTE = '/stories';
+const IMAGES_ROUTE = '/store/images';
 const MESSAGE_BAD_REQUEST = 'Error: Bad Request [400].';
 const MESSAGE_NOT_FOUND = 'Error: Not Found [404].';
 const UPDATES_SEARCH_PARAMETER = 'updates';
@@ -73,6 +74,7 @@ let focusId = document.querySelector('#focusId');
 let focusTagsList = document.querySelector('#focusTagsList');
 let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
 let dynambDisplay = document.querySelector('#dynambDisplay');
+let inputImage = document.querySelector('#inputImage');
 let createStory = document.querySelector('#createStory');
 let inputUrl = document.querySelector('#inputUrl');
 let inputTags = document.querySelector('#inputTags');
@@ -92,6 +94,7 @@ let isPollPending = false;
 let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
+let storyImageData;
 let devices = {};
 let isFocusId;
 let socket;
@@ -103,7 +106,7 @@ let searchParams = new URLSearchParams(location.search);
 let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
 
 
-// Monitor reinitialise buttons
+// Monitor buttons
 reinitialise.onclick = init;
 createStory.onclick = createAndAssociateStory;
 
@@ -584,12 +587,60 @@ function setContainerHeight() {
 }
 
 
+// Create the story
+function postStory(story, callback) {
+  let httpRequest = new XMLHttpRequest();
+
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if(httpRequest.status === STATUS_CREATED) {
+        let response = JSON.parse(httpRequest.responseText);
+        let storyId = Object.keys(response.stories)[0];
+        let storyUrl = baseUrl + STORIES_ROUTE + '/' + storyId;
+        callback(storyUrl);
+      }
+      else {
+        callback();
+      }
+    }
+  };
+  httpRequest.open('POST', baseUrl + STORIES_ROUTE);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(JSON.stringify(story));
+}
+
+
+// Create the image
+function postImage(callback) {
+  let httpRequest = new XMLHttpRequest();
+  let formData = new FormData();
+  formData.append('image', inputImage.files[0]);
+
+  httpRequest.onload = function(event) {
+    if(httpRequest.status === STATUS_CREATED) {
+      let response = JSON.parse(httpRequest.responseText);
+      let imageId = Object.keys(response.images)[0];
+      let url = baseUrl + IMAGES_ROUTE + '/' + imageId;
+
+      return callback(url);
+    }
+    else {
+      return callback();
+    } 
+  };
+  httpRequest.open('POST', baseUrl + IMAGES_ROUTE, true);
+  httpRequest.send(formData);  
+}
+
+
 // Create and associate the story given in the form
 function createAndAssociateStory() {
+  let hasImageFile = (inputImage.files.length > 0);
   let name = inputName.value;
   let id = name.toLowerCase();
   let type = 'schema:' + inputSelectType.value;
-  let json = {
+  let story = {
       "@context": {
         "schema": "http://schema.org/"
       },
@@ -602,27 +653,29 @@ function createAndAssociateStory() {
       ]
   };
 
-  let httpRequest = new XMLHttpRequest();
-
-  httpRequest.onreadystatechange = function() {
-    if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      if(httpRequest.status === STATUS_CREATED) {
-        let response = JSON.parse(httpRequest.responseText);
-        let storyId = Object.keys(response.stories)[0];
-        let storyUrl = baseUrl + STORIES_ROUTE + '/' + storyId;
-
+  if(hasImageFile) {
+    postImage((imageUrl) => {
+      if(imageUrl) {
+        story['@graph'][0]["schema:image"] = imageUrl;
+      }
+      postStory(story, (storyUrl) => {
+        if(storyUrl) {
+          putAssociationProperty(URL_ROUTE, { url: storyUrl },
+                                 handlePropertyUpdate);
+          cuttlefishStory.render(story, storyDisplay);
+        }
+      });
+    });
+  }
+  else {
+    postStory(story, (storyUrl) => {
+      if(storyUrl) {
         putAssociationProperty(URL_ROUTE, { url: storyUrl },
                                handlePropertyUpdate);
+        cuttlefishStory.render(story, storyDisplay);
       }
-      else {
-        // TODO: story creation failed
-      }
-    }
-  };
-  httpRequest.open('POST', baseUrl + STORIES_ROUTE);
-  httpRequest.setRequestHeader('Content-Type', 'application/json');
-  httpRequest.setRequestHeader('Accept', 'application/json');
-  httpRequest.send(JSON.stringify(json));
+    });
+  }
 }
 
 
