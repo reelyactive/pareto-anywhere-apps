@@ -1,11 +1,14 @@
 /**
- * Copyright reelyActive 2021
+ * Copyright reelyActive 2021-2022
  * We believe in an open Internet of Things
  */
 
 
 // Constants
 const STATUS_OK = 200;
+const STATUS_CREATED = 201;
+const STATUS_BAD_REQUEST = 400;
+const STATUS_NOT_FOUND = 404;
 const SIGNATURE_SEPARATOR = '/';
 const DIRECTORY_SEPARATOR = ':';
 const POLLING_INTERVAL_MILLISECONDS = 10000;
@@ -13,7 +16,16 @@ const CONTEXT_ROUTE = '/context';
 const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';
 const TAG_ROUTE = '/tag';
+const ASSOCIATIONS_ROUTE = '/associations';
+const URL_ROUTE = '/url';
+const TAGS_ROUTE = '/tags';
+const POSITION_ROUTE = '/position';
+const STORIES_ROUTE = '/stories';
+const IMAGES_ROUTE = '/store/images';
+const MESSAGE_BAD_REQUEST = 'Error: Bad Request [400].';
+const MESSAGE_NOT_FOUND = 'Error: Not Found [404].';
 const UPDATES_SEARCH_PARAMETER = 'updates';
+const TIME_OPTIONS = { hour12: false };
 const MAX_RSSI = -30;
 const HLC_MIN_HEIGHT_PX = 480;
 const HLC_UNUSABLE_HEIGHT_PX = 120;
@@ -52,6 +64,8 @@ let reinitialise = document.querySelector('#reinitialise');
 let noUpdates = document.querySelector('#settingsNoUpdates');
 let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
 let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
+let searchRoute = document.querySelector('#searchRoute');
+let time = document.querySelector('#time');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
@@ -60,15 +74,27 @@ let focusId = document.querySelector('#focusId');
 let focusTagsList = document.querySelector('#focusTagsList');
 let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
 let dynambDisplay = document.querySelector('#dynambDisplay');
+let inputImage = document.querySelector('#inputImage');
+let createStory = document.querySelector('#createStory');
+let inputUrl = document.querySelector('#inputUrl');
+let inputTags = document.querySelector('#inputTags');
+let inputDirectory = document.querySelector('#inputDirectory');
+let inputPosition = document.querySelector('#inputPosition');
+let updateUrl = document.querySelector('#updateUrl');
+let updateTags = document.querySelector('#updateTags');
+let updateDirectory = document.querySelector('#updateDirectory');
+let updatePosition = document.querySelector('#updatePosition');
+let associationError = document.querySelector('#associationError');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
-let selectedUrl = baseUrl + CONTEXT_ROUTE;
+let selectedRoute = CONTEXT_ROUTE;
 let isPollPending = false;
 let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
+let storyImageData;
 let devices = {};
 let isFocusId;
 let socket;
@@ -80,8 +106,9 @@ let searchParams = new URLSearchParams(location.search);
 let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
 
 
-// Monitor reinitialisation button
+// Monitor buttons
 reinitialise.onclick = init;
+createStory.onclick = createAndAssociateStory;
 
 // Monitor each settings radio button
 noUpdates.onchange = updateUpdates;
@@ -124,7 +151,8 @@ function init(isInitialPageLoad) {
     realTimeUpdates.disabled = true;
   }
 
-  selectedUrl = baseUrl + CONTEXT_ROUTE;
+  selectedRoute = CONTEXT_ROUTE;
+  searchRoute.textContent = selectedRoute;
   selectedDeviceSignature = null;
   isFocusId = false;
   isPollPending = false;
@@ -143,7 +171,7 @@ function pollAndDisplay() {
   if(!isPollPending) {
     isPollPending = true;
 
-    getContext(selectedUrl, function(status, response) {
+    getContext(baseUrl + selectedRoute, function(status, response) {
       let statusIcon = createElement('i', 'fas fa-cloud text-danger');
       devices = response.devices || {};
       isPollPending = false;
@@ -182,7 +210,7 @@ function getContext(url, callback) {
 
 // Create and manage a socket.io connection
 function createSocket() {
-  socket = io(selectedUrl);
+  socket = io(baseUrl + selectedRoute);
 
   socket.on('connect', function() {
     connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
@@ -217,23 +245,24 @@ function updateQuery(event) {
 
   switch(event.currentTarget.id) {
     case 'focusId':
-      selectedUrl = baseUrl + CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
-                    selectedDeviceSignature;
+      selectedRoute = CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
+                      selectedDeviceSignature;
       isFocusId = true;
       if(realTimeUpdates.checked) { createSocket(); }
       break;
     case 'focusTag':
       let tag = event.currentTarget.textContent;
-      selectedUrl = baseUrl + CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
+      selectedRoute = CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
       isFocusId = false;
       break;
     case 'focusDirectory':
       let directory = event.currentTarget.textContent;
-      selectedUrl = baseUrl + CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
+      selectedRoute = CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
       isFocusId = false;
       break;
   }
 
+  searchRoute.textContent = selectedRoute;
   realTimeUpdates.disabled = false;
   pollAndDisplay();
 }
@@ -398,6 +427,11 @@ function updateOffcanvasBody(device) {
     storyDisplay.replaceChildren();
   }
 
+  inputUrl.value = device.url || '';
+  inputTags.value = device.tags || '';
+  inputDirectory.value = device.directory || '';
+  inputPosition.value = device.position || '';
+
   if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
     device.tags.forEach(function(tag) {
       let li = createElement('li');
@@ -518,6 +552,7 @@ function renderHyperlocalContext() {
   layout.stop();
   layout = cy.elements().makeLayout(options.layout);
   layout.run();
+  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 }
 
 
@@ -550,6 +585,182 @@ function setContainerHeight() {
                         HLC_MIN_HEIGHT_PX) + 'px';
   container.setAttribute('style', 'height:' + height);
 }
+
+
+// Create the story
+function postStory(story, callback) {
+  let httpRequest = new XMLHttpRequest();
+
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if(httpRequest.status === STATUS_CREATED) {
+        let response = JSON.parse(httpRequest.responseText);
+        let storyId = Object.keys(response.stories)[0];
+        let storyUrl = baseUrl + STORIES_ROUTE + '/' + storyId;
+        callback(storyUrl);
+      }
+      else {
+        callback();
+      }
+    }
+  };
+  httpRequest.open('POST', baseUrl + STORIES_ROUTE);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(JSON.stringify(story));
+}
+
+
+// Create the image
+function postImage(callback) {
+  let httpRequest = new XMLHttpRequest();
+  let formData = new FormData();
+  formData.append('image', inputImage.files[0]);
+
+  httpRequest.onload = function(event) {
+    if(httpRequest.status === STATUS_CREATED) {
+      let response = JSON.parse(httpRequest.responseText);
+      let imageId = Object.keys(response.images)[0];
+      let url = baseUrl + IMAGES_ROUTE + '/' + imageId;
+
+      return callback(url);
+    }
+    else {
+      return callback();
+    } 
+  };
+  httpRequest.open('POST', baseUrl + IMAGES_ROUTE, true);
+  httpRequest.send(formData);  
+}
+
+
+// Create and associate the story given in the form
+function createAndAssociateStory() {
+  let hasImageFile = (inputImage.files.length > 0);
+  let name = inputName.value;
+  let id = name.toLowerCase();
+  let type = 'schema:' + inputSelectType.value;
+  let story = {
+      "@context": {
+        "schema": "http://schema.org/"
+      },
+      "@graph": [
+        {
+          "@id": id,
+          "@type": type,
+          "schema:name": name
+        }
+      ]
+  };
+
+  if(hasImageFile) {
+    postImage((imageUrl) => {
+      if(imageUrl) {
+        story['@graph'][0]["schema:image"] = imageUrl;
+      }
+      postStory(story, (storyUrl) => {
+        if(storyUrl) {
+          putAssociationProperty(URL_ROUTE, { url: storyUrl },
+                                 handlePropertyUpdate);
+          cuttlefishStory.render(story, storyDisplay);
+        }
+      });
+    });
+  }
+  else {
+    postStory(story, (storyUrl) => {
+      if(storyUrl) {
+        putAssociationProperty(URL_ROUTE, { url: storyUrl },
+                               handlePropertyUpdate);
+        cuttlefishStory.render(story, storyDisplay);
+      }
+    });
+  }
+}
+
+
+// PUT the given association property
+function putAssociationProperty(route, json, callback) {
+  let url = baseUrl + ASSOCIATIONS_ROUTE + '/' + selectedDeviceSignature +
+            route;
+  let httpRequest = new XMLHttpRequest();
+  let jsonString = JSON.stringify(json);
+
+  associationError.hidden = true;
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if((httpRequest.status === STATUS_OK) ||
+         (httpRequest.status === STATUS_CREATED)) {
+        return callback(httpRequest.status,
+                        JSON.parse(httpRequest.responseText));
+      }
+      else {
+        return callback(httpRequest.status);
+      }
+    }
+  };
+  httpRequest.open('PUT', url);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(jsonString);
+}
+
+
+// Handle the update of an association property
+function handlePropertyUpdate(status, response) {
+  if(status === STATUS_OK) {
+    deviceIdSignature = Object.keys(response.associations)[0];
+    let deviceAssociations = response.associations[deviceIdSignature];
+    inputUrl.value = deviceAssociations.url || '';
+    inputTags.value = deviceAssociations.tags || '';
+    inputDirectory.value =  deviceAssociations.directory || '';
+    inputPosition.value = deviceAssociations.position || '';
+  }
+  else if(status === STATUS_BAD_REQUEST) {
+    associationErrorMessage.textContent = MESSAGE_BAD_REQUEST;
+    associationError.hidden = false;
+  }
+  else if(status === STATUS_NOT_FOUND) {
+    associationErrorMessage.textContent = MESSAGE_NOT_FOUND;
+    associationError.hidden = false;
+  }
+}
+
+
+// Association update functions (by property)
+let associationActions = {
+    "url":
+       function() {
+         let json = { url: inputUrl.value };
+         putAssociationProperty(URL_ROUTE, json, handlePropertyUpdate);
+       },
+    "tags":
+       function() {
+         let json = { tags: inputTags.value.split(',') };
+         putAssociationProperty(TAGS_ROUTE, json, handlePropertyUpdate);
+       },
+    "directory":
+       function() {
+         let json = { directory: inputDirectory.value };
+         putAssociationProperty(DIRECTORY_ROUTE, json, handlePropertyUpdate);
+       },
+    "position":
+       function() {
+         let positionArray = [];
+
+         inputPosition.value.split(',').forEach(function(coordinate) {
+           positionArray.push(parseFloat(coordinate));
+         });
+
+         let json = { position: positionArray };
+         putAssociationProperty(POSITION_ROUTE, json, handlePropertyUpdate);
+       }
+};
+
+updateUrl.onclick = associationActions['url'];
+updateTags.onclick = associationActions['tags'];
+updateDirectory.onclick = associationActions['directory'];
+updatePosition.onclick = associationActions['position'];
 
 
 // Create an element as specified

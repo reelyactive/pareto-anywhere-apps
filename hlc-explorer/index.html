@@ -176,6 +176,18 @@
     </nav>
     <!-- Content -->
     <div class="container-fluid">
+      <div class="position-relative">
+        <div class="position-absolute top-0 start-0 mt-4 ms-4">
+          <h4 class="text-muted text-break mb-3">
+            <i class="fas fa-search"></i>&nbsp;
+            <span id="searchRoute"> /context </span>
+          </h4>
+          <h6 class="text-muted text-break ms-1">
+            <i class="fas fa-clock"></i>&nbsp;
+            <span id="time"> time </span>
+          </h6>
+        </div>
+      </div>
       <div class="d-block">
         <div id="cy-container">
           <div id="cy" class="w-100 h-100"></div>
@@ -231,6 +243,109 @@
           </div>
           <div id="dynambDisplay" class="my-4"></div>
           <div id="statidDisplay" class="my-4"></div>
+          <div id="editDisplay" class="my-4">
+            <ul class="nav nav-tabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="storytab"
+                        data-bs-toggle="tab" data-bs-target="#storycontent"
+                        type="button" role="tab" aria-controls="storytab"
+                        aria-selected="true"> Story </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="associationstab" role="tab"
+                        data-bs-toggle="tab" aria-controls="associationstab"
+                        data-bs-target="#associationscontent" type="button" 
+                        aria-selected="false"> Associations </button>
+              </li>
+            </ul>
+            <div class="tab-content tab-content-border">
+              <!-- Story tab -->
+              <div class="tab-pane fade show active" id="storycontent"
+                   role="tabpanel" aria-labelledby="storytab">
+                <form class="my-2" onsubmit="return false;">
+                  <select class="form-select mb-2" id="inputSelectType"
+                          aria-label="Story type">
+                    <option value="Product" selected> Product </option>
+                    <option value="Person">Person</option>
+                    <option value="Place">Place</option>
+                  </select>
+                  <div class="input-group mb-2">
+                    <span class="input-group-text"> Name </span>
+                    <input class="form-control" id="inputName" type="text"
+                           aria-label="Name">
+                  </div>
+                  <div class="form-group mb-2">
+                    <label for="inputImage"> Image </label>
+                    <input type="file" class="form-control-file" 
+                           id="inputImage">
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-sm btn-primary"
+                            id="createStory">
+                      Store & Associate
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <!-- Associations tab -->
+              <div class="tab-pane fade" id="associationscontent"
+                   role="tabpanel" aria-labelledby="associationstab">
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-link"></i> &nbsp; url
+                    </span>
+                    <input class="form-control" id="inputUrl" type="url">
+                      <button class="btn btn-primary" type="button"
+                              id="updateUrl">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-tags"></i> &nbsp; tags
+                    </span>
+                    <input class="form-control" id="inputTags" type="text">
+                      <button class="btn btn-primary" type="button"
+                              id="updateTags">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-sitemap"></i> &nbsp; directory
+                    </span>
+                    <input class="form-control" id="inputDirectory" type="text">
+                      <button class="btn btn-primary" type="button"
+                              id="updateDirectory">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-map-marked-alt"></i> &nbsp; position
+                    </span>
+                    <input class="form-control" id="inputPosition" type="text">
+                      <button class="btn btn-primary" type="button"
+                              id="updatePosition">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <p id="associationError" hidden></p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -239,7 +354,7 @@
         pareto-anywhere-apps
       </a>
       &nbsp; | &nbsp;
-      <a href="https://www.reelyactive.com"> &copy; reelyActive 2018-2021 </a>
+      <a href="https://www.reelyactive.com"> &copy; reelyActive 2018-2022 </a>
     </footer>
 
     <!-- Optional JavaScript -->
