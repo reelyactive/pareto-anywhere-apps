@@ -25,6 +25,7 @@ const IMAGES_ROUTE = '/store/images';
 const MESSAGE_BAD_REQUEST = 'Error: Bad Request [400].';
 const MESSAGE_NOT_FOUND = 'Error: Not Found [404].';
 const UPDATES_SEARCH_PARAMETER = 'updates';
+const DEMO_SEARCH_PARAMETER = 'demo';
 const TIME_OPTIONS = { hour12: false };
 const MAX_RSSI = -30;
 const HLC_MIN_HEIGHT_PX = 480;
@@ -60,6 +61,7 @@ const GRAPH_STYLE = [
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let demoalert = document.querySelector('#demoalert');
 let reinitialise = document.querySelector('#reinitialise');
 let noUpdates = document.querySelector('#settingsNoUpdates');
 let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
@@ -104,6 +106,14 @@ let layout;
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
+let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+
+// Demo mode: update connection status
+if(isDemo) {
+  connection.replaceChildren(createElement('b',
+                                           'animate-breathing text-success',
+                                           'DEMO'));
+}
 
 
 // Monitor buttons
@@ -171,6 +181,18 @@ function pollAndDisplay() {
   if(!isPollPending) {
     isPollPending = true;
 
+    if(isDemo) {
+      let response = starling.getContext(selectedRoute);
+      devices = response.devices || {};
+      isPollPending = false;
+
+      setContainerHeight();
+      renderHyperlocalContext();
+      fetchStories();
+
+      return;
+    }
+
     getContext(baseUrl + selectedRoute, function(status, response) {
       let statusIcon = createElement('i', 'fas fa-cloud text-danger');
       devices = response.devices || {};
@@ -184,6 +206,7 @@ function pollAndDisplay() {
       }
       else {
         connection.hidden = false;
+        demoalert.hidden = false;
       }
 
       connection.replaceChildren(statusIcon);
@@ -560,6 +583,9 @@ function renderHyperlocalContext() {
 function updateSearchString() {
   let searchString = new URLSearchParams();
 
+  if(isDemo) {
+    searchString.append(DEMO_SEARCH_PARAMETER, 'default');
+  }
   if(realTimeUpdates.checked) { 
     searchString.append(UPDATES_SEARCH_PARAMETER, 'realtime');
   }

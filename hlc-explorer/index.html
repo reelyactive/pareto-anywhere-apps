@@ -178,6 +178,14 @@
     <div class="container-fluid">
       <div class="position-relative">
         <div class="position-absolute top-0 start-0 mt-4 ms-4">
+          <div class="alert alert-ambient alert-dismissible fade show"
+               role="alert" id="demoalert" hidden>
+            <i class="fas fa-exclamation-triangle animate-breathing me-2"></i>
+            Could not connect to Pareto Anywhere API,
+            <a href="?demo" class="alert-link"> enable demo </a> instead?
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+          </div>
           <h4 class="text-muted text-break mb-3">
             <i class="fas fa-search"></i>&nbsp;
             <span id="searchRoute"> /context </span>
@@ -366,6 +374,7 @@
     <script src="../js/cuttlefish-story.js"></script>
     <script src="../js/cuttlefish-dynamb.js"></script>
     <script src="../js/cuttlefish-statid.js"></script>
+    <script src="../js/starling.js"></script>
     <script src="../js/hlc-explorer.js"></script>
   </body>
 </html>

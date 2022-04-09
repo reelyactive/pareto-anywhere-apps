@@ -8,23 +8,41 @@ let starling = (function() {
 
   // Internal constants
   let DEFAULT_TRANSMITTERS = [
-      { id: "fee150bada55", idType: 2, dynambProperties: [] },
-      { id: "ac233fa00001", idType: 2, dynambProperties: [ 'acceleration' ] },
+      { id: "fee150bada55", idType: 3, dynambProperties: [],
+        statid: { uri: "https://sniffypedia.org/Product/Any_BLE-Device/",
+        name: "Harald" } },
+      { id: "0be118ad0660", idType: 3, dynambProperties: [],
+        statid: { deviceIds: [ "496f49445554462d3332/00000001f415"] },
+        url: "https://www.reelyactive.com/team/obelix/" },
+      { id: "ac233fa00001", idType: 2, dynambProperties: [ 'acceleration' ],
+        statid: { uri: "https://sniffypedia.org/Organization/Shenzhen_Minew_Technologies_Co_Ltd/" } },
       { id: "ac233fa00002", idType: 2,
-        dynambProperties: [ 'temperature', 'relativeHumidity' ] },
+        dynambProperties: [ 'temperature', 'relativeHumidity' ],
+        statid: { uri: "https://sniffypedia.org/Organization/Shenzhen_Minew_Technologies_Co_Ltd/" } },
       { id: "ac233fa00003", idType: 2,
-        dynambProperties: [ 'isButtonPressed' ] },
+        dynambProperties: [ 'isButtonPressed' ],
+        statid: { uri: "https://sniffypedia.org/Organization/Shenzhen_Minew_Technologies_Co_Ltd/" } },
       { id: "e50000000001", idType: 3,
-        dynambProperties: [ 'illuminance', 'isMotionDetected' ]  },
+        dynambProperties: [ 'illuminance', 'isMotionDetected' ],
+        statid: { uri: "https://sniffypedia.org/Organization/EnOcean_GmbH/" },
+        tags: [ "room" ]  },
       { id: "e50010000002", idType: 3 ,
         dynambProperties: [ 'acceleration', 'illuminance', 'isContactDetected',
                             'isMotionDetected', 'temperature',
-                            'relativeHumidity' ]  }
-
+                            'relativeHumidity' ],
+        statid: { uri: "https://sniffypedia.org/Organization/EnOcean_GmbH/" },
+        tags: [ "chair" ]  },
+      { id: "0c4708eca570", idType: 3, dynambProperties: [],
+        statid: { uri: "https://sniffypedia.org/Product/Google_Chromecast/",
+                  uuids: [ "fea0" ], name: "Ambient Display" } }
   ];
   let DEFAULT_RECEIVERS = [
-      { id: "001bc50940810000", idType: 1 },
-      { id: "0b1e6a7e8a40", idType: 2 }
+      { id: "001bc50940810000", idType: 1,
+        url: "https://www.reelyactive.com/parc/stories/entrance/",
+        directory: "parc:entrance", position: [ -73.57127, 45.50889 ] },
+      { id: "0b1e6a7e8a40", idType: 2,
+        url: "https://www.reelyactive.com/parc/stories/reelyactive/",
+        directory: "parc:reelyactive", position: [ -73.57120, 45.50886 ] }
   ];
   let DEFAULT_UPDATE_CYCLE_MILLISECONDS = 4000;
 
@@ -108,6 +126,47 @@ let starling = (function() {
     }
   }
 
+  // Emulate a context of devices
+  function createDevices(route) {
+    let devices = {};
+
+    transmitters.forEach((transmitter) => {
+      let signature = transmitter.id + SIGNATURE_SEPARATOR + transmitter.idType;
+      let device = { nearest: [] };
+      let dynamb = createDynamb(transmitter);
+
+      receivers.forEach((receiver) => {
+        if((Math.random() * device.nearest.length) < 0.7) {
+          device.nearest.push({
+            device: receiver.id + SIGNATURE_SEPARATOR + receiver.idType,
+            rssi: -90 + Math.round(Math.random() * 40)
+          });
+        }
+      });
+      device.nearest.sort((a, b) => (b.rssi - a.rssi));
+
+      if(dynamb) { device.dynamb = dynamb; }
+      if(transmitter.statid) { device.statid = transmitter.statid; }
+      if(transmitter.tags) { device.tags = transmitter.tags; }
+      if(transmitter.url) { device.url = transmitter.url; }
+
+      devices[signature] = device;
+    });
+
+    receivers.forEach((receiver) => {
+      let signature = receiver.id + SIGNATURE_SEPARATOR + receiver.idType;
+      let device = {};
+
+      if(receiver.url) { device.url = receiver.url; }
+      if(receiver.directory) { device.directory = receiver.directory; }
+      if(receiver.position) { device.position = receiver.position; }
+
+      devices[signature] = device;
+    });
+
+    return devices;
+  }
+
   // Iterate a single emulated event and set timeout for the next
   function iterate() {
     let raddec = createRaddec(transmitters[transmitterIndex], receivers);
@@ -127,6 +186,11 @@ let starling = (function() {
     setTimeout(iterate, interval);
   }
 
+  // Get the (emulated) context for a specific route
+  let getContext = function(route) {
+    return { devices: createDevices(route) };
+  };
+
   // Register a callback for the given event type
   let setEventCallback = function(event, callback) {
     if(!(callback && (typeof callback === 'function'))) { 
@@ -139,11 +203,12 @@ let starling = (function() {
         isEmulating = true;
       }
     }
-  }
+  };
 
   // Expose the following functions and variables
   return {
-    on: setEventCallback
+    on: setEventCallback,
+    getContext: getContext
   }
 
 }());
