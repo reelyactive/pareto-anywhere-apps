@@ -15,9 +15,11 @@ const EVENT_ICONS = [
     'fas fa-heartbeat',
     'fas fa-sign-out-alt'
 ];
+const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let demoalert = document.querySelector('#demoalert');
 let raddecs = document.querySelector('#raddecs');
 let filters = [
     document.querySelector('#filterAppearances'),
@@ -38,23 +40,37 @@ let progressBars = [
 let updateMilliseconds = 1000;
 let eventCounts = [ 0, 0, 0, 0, 0 ];
 
-// Connect to the socket.io stream and feed to beaver
-let baseUrl = window.location.protocol + '//' + window.location.hostname +
+// Initialise based on URL search parameters, if any
+let searchParams = new URLSearchParams(location.search);
+let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+
+// Demo mode: connect to starling.js
+if(isDemo) {
+  beaver.listen(starling, true);
+  connection.replaceChildren(createElement('b',
+                                           'animate-breathing text-success',
+                                           'DEMO'));
+}
+
+// Normal mode: connect to socket.io
+else {
+  let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
-let socket = io(baseUrl);
-beaver.listen(socket, true);
+  let socket = io(baseUrl);
+  beaver.listen(socket, true);
 
-
-// Display changes to the socket.io connection status
-socket.on("connect", function() {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
-});
-socket.on("connect_error", function() {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
-});
-socket.on("disconnect", function(reason) {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
-});
+  // Display changes to the socket.io connection status
+  socket.on("connect", function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  });
+  socket.on("connect_error", function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+    demoalert.hidden = false;
+  });
+  socket.on("disconnect", function(reason) {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+  });
+}
 
 
 // Non-disappearance events
@@ -177,11 +193,28 @@ function createEventElements(raddec) {
 
 
 // Create an element as specified
-function createElement(elementName, classNames) {
+function createElement(elementName, classNames, content) {
   let element = document.createElement(elementName);
 
   if(classNames) {
     element.setAttribute('class', classNames);
+  }
+
+  if((content instanceof Element) || (content instanceof DocumentFragment)) {
+    element.appendChild(content);
+  }
+  else if(Array.isArray(content)) {
+    content.forEach(function(item) {
+      if((item instanceof Element) || (item instanceof DocumentFragment)) {
+        element.appendChild(item);
+      }
+      else {
+        element.appendChild(document.createTextNode(item));
+      }
+    });
+  }
+  else if(content) {
+    element.appendChild(document.createTextNode(content));
   }
 
   return element;

@@ -11,9 +11,11 @@ const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 const DEFAULT_UPDATE_MILLISECONDS = 5000;
 const DEFAULT_COMPILATION_MILLISECONDS = 10000;
 const DYNAMB_DISPLAY_HOLDOFF_MILLISECONDS = 1000;
+const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let demoalert = document.querySelector('#demoalert');
 let message = document.querySelector('#message');
 let latestdynamb = document.querySelector('#latestdynamb');
 let propertytable = document.querySelector('#propertytable');
@@ -24,24 +26,38 @@ let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
 let dynambCompilation = new Map();
 let latestDisplayedDynambTimestamp = 0;
 
+// Initialise based on URL search parameters, if any
+let searchParams = new URLSearchParams(location.search);
+let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
-// Connect to the socket.io stream and handle dynamb events
-let baseUrl = window.location.protocol + '//' + window.location.hostname +
-              ':' + window.location.port;
-let socket = io(baseUrl + DYNAMB_ROUTE);
-socket.on("dynamb", handleDynamb);
+// Demo mode: connect to starling.js
+if(isDemo) {
+  starling.on("dynamb", handleDynamb);
+  connection.replaceChildren(createElement('b',
+                                           'animate-breathing text-success',
+                                           'DEMO'));
+}
+
+// Normal mode: connect to socket.io
+else {
+  let baseUrl = window.location.protocol + '//' + window.location.hostname +
+                ':' + window.location.port;
+  let socket = io(baseUrl + DYNAMB_ROUTE);
+  socket.on("dynamb", handleDynamb);
 
 
-// Display changes to the socket.io connection status
-socket.on("connect", function() {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
-});
-socket.on("connect_error", function() {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
-});
-socket.on("disconnect", function(reason) {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
-});
+  // Display changes to the socket.io connection status
+  socket.on("connect", function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  });
+  socket.on("connect_error", function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+    demoalert.hidden = false;
+  });
+  socket.on("disconnect", function(reason) {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+  });
+}
 
 
 // Begin periodic updates of stats display

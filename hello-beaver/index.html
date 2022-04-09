@@ -131,6 +131,14 @@
     <div class="container-fluid">
       <div class="row justify-content-center">
         <div class="col-md-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div class="alert alert-ambient alert-dismissible fade show mt-5"
+               role="alert" id="demoalert" hidden>
+            <i class="fas fa-exclamation-triangle animate-breathing me-2"></i>
+            Could not connect to Pareto Anywhere API,
+            <a href="?demo" class="alert-link"> enable demo </a> instead?
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+          </div>
           <div class="row mt-5">
             <div class="col-md-6 mb-3">
               <table class="table table-hover text-center">
@@ -311,6 +319,7 @@
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
     <script src="../js/socket.io.min.js"></script>
     <script src="../js/beaver.js"></script>
+    <script src="../js/starling.js"></script>
     <script src="../js/hello-beaver.js"></script>
   </body>
 </html>
