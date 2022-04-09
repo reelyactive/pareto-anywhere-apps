@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2021
+ * Copyright reelyActive 2021-2022
  * We believe in an open Internet of Things
  */
 
@@ -13,9 +13,11 @@ const CONTEXT_ROUTE = '/context';
 const SNIFFYPEDIA_BASE_URI = 'https://sniffypedia.org/';
 const ACCEPTED_STORY_TYPES = [ 'schema:Person', 'schema:Product' ];
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
+const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let demoalert = document.querySelector('#demoalert');
 let storycolumn = document.querySelector('#storycolumn');
 let chartable = document.querySelector('#chartable');
 let time = document.querySelector('#time');
@@ -27,6 +29,17 @@ let selectedUrl = baseUrl + CONTEXT_ROUTE;
 let isPollPending = false;
 let pollingInterval;
 
+// Initialise based on URL search parameters, if any
+let searchParams = new URLSearchParams(location.search);
+let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+
+// Demo mode: update connection status
+if(isDemo) {
+  connection.replaceChildren(createElement('b',
+                                           'animate-breathing text-success',
+                                           'DEMO'));
+}
+
 
 setInterval(pollAndDisplay, POLLING_INTERVAL_MILLISECONDS);
 pollAndDisplay();
@@ -36,6 +49,14 @@ pollAndDisplay();
 function pollAndDisplay() {
   if(!isPollPending) {
     isPollPending = true;
+
+    if(isDemo) {
+      let response = starling.getContext();
+      devices = response.devices || {};
+      isPollPending = false;
+      updateDisplay(devices);
+      return;
+    }
 
     getContext(selectedUrl, function(status, response) {
       let statusIcon = createElement('i', 'fas fa-cloud text-danger');
@@ -48,6 +69,7 @@ function pollAndDisplay() {
       }
       else {
         connection.hidden = false;
+        demoalert.hidden = false;
         updateDisplay({});
       }
 

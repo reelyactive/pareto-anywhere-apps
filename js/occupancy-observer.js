@@ -8,9 +8,11 @@
 const DYNAMB_ROUTE = '/devices/dynamb';
 const SIGNATURE_SEPARATOR = '/';
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
+const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
 let connection = document.querySelector('#connection');
+let demoalert = document.querySelector('#demoalert');
 let occupancytable = document.querySelector('#occupancytable');
 let chairsoccupied = document.querySelector('#chairsoccupied');
 let chairsavailable = document.querySelector('#chairsavailable');
@@ -25,25 +27,39 @@ let occupancyCompilation = new Map();
 let assetStatus = { chairsOccupied: 0, chairsAvailable: 0,
                     desksoccupied: 0, desksAvailable: 0,
                     roomsOccupied: 0, roomsAvailable: 0 };
-
-
-// Connect to the socket.io stream and handle dynamb events
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
-let socket = io(baseUrl + DYNAMB_ROUTE);
-socket.on("dynamb", handleDynamb);
+
+// Initialise based on URL search parameters, if any
+let searchParams = new URLSearchParams(location.search);
+let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+
+// Demo mode: connect to starling.js
+if(isDemo) {
+  starling.on("dynamb", handleDynamb);
+  connection.replaceChildren(createElement('b',
+                                           'animate-breathing text-success',
+                                           'DEMO'));
+}
+
+// Normal mode: connect to socket.io
+else {
+  let socket = io(baseUrl + DYNAMB_ROUTE);
+  socket.on("dynamb", handleDynamb);
 
 
-// Display changes to the socket.io connection status
-socket.on("connect", function() {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
-});
-socket.on("connect_error", function() {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
-});
-socket.on("disconnect", function(reason) {
-  connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
-});
+  // Display changes to the socket.io connection status
+  socket.on("connect", function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  });
+  socket.on("connect_error", function() {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+    demoalert.hidden = false;
+  });
+  socket.on("disconnect", function(reason) {
+    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+  });
+}
 
 
 // Begin periodic updates of stats display
@@ -66,7 +82,13 @@ function handleDynamb(dynamb) {
       status = { current: isMotionDetected,
                  previous: [ null, null, null ],
                  tags: [] };
-      retrieveMetadata(deviceSignature);
+      if(isDemo) {
+        let tags = [ 'chair', 'desk', 'room' ];
+        status.tags.push(tags[Math.floor(Math.random() * tags.length)]);
+      }
+      else {
+        retrieveMetadata(deviceSignature);
+      }
     }
 
     updateOccupancyRow(status, deviceSignature);

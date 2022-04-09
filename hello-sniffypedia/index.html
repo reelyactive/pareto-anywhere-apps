@@ -131,6 +131,15 @@
     <div class="container-fluid">
       <div class="row justify-content-center">
         <div class="col-md-12 col-lg-10 col-xl-8 col-xxl-10">
+          <div class="alert alert-ambient alert-dismissible fade show mt-5"
+               role="alert" id="demoalert" hidden>
+            <i class="fas fa-exclamation-triangle animate-breathing me-2"></i>
+            Could not connect to Pareto Anywhere API,
+            <a href="?demo=default"
+               class="alert-link"> enable demo </a> instead?
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+          </div>
           <div class="row mt-5">
             <div id="firsthalf" class="col-12 col-xxl-6">
             </div>
@@ -145,7 +154,7 @@
         pareto-anywhere-apps
       </a>
       &nbsp; | &nbsp;
-      <a href="https://www.reelyactive.com"> &copy; reelyActive 2018-2021 </a>
+      <a href="https://www.reelyactive.com"> &copy; reelyActive 2018-2022 </a>
     </footer>
 
     <!-- Optional JavaScript -->
@@ -153,6 +162,7 @@
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
     <script src="../js/cormorant.js"></script>
     <script src="../js/cuttlefish-story.js"></script>
+    <script src="../js/starling.js"></script>
     <script src="../js/hello-sniffypedia.js"></script>
   </body>
 </html>

@@ -120,6 +120,15 @@
     <div class="container-fluid">
       <div class="row justify-content-center">
         <div class="col-md-12 col-lg-10 col-xl-8 col-xxl-10">
+          <div class="alert alert-ambient alert-dismissible fade show mt-5"
+               role="alert" id="demoalert" hidden>
+            <i class="fas fa-exclamation-triangle animate-breathing me-2"></i>
+            Could not connect to Pareto Anywhere API,
+            <a href="?demo=default"
+               class="alert-link"> enable demo </a> instead?
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+          </div>
           <div class="row justify-content-between mt-5">
             <div class="col-12 col-xxl-5 mb-5 order-xxl-last">
               <table class="table table-hover text-center">
@@ -227,6 +236,7 @@
     <script src="../js/socket.io.min.js"></script>
     <script src="../js/cormorant.js"></script>
     <script src="../js/cuttlefish-story.js"></script>
+    <script src="../js/starling.js"></script>
     <script src="../js/occupancy-observer.js"></script>
   </body>
 </html>
