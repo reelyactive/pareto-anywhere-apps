@@ -195,10 +195,10 @@ function pollAndDisplay() {
 
     getContext(baseUrl + selectedRoute, function(status, response) {
       let statusIcon = createElement('i', 'fas fa-cloud text-danger');
-      devices = response.devices || {};
       isPollPending = false;
 
       if(status === STATUS_OK) {
+        devices = JSON.parse(response).devices || {};
         statusIcon = createElement('i', 'fas fa-cloud text-success');
         setContainerHeight();
         renderHyperlocalContext();
@@ -221,8 +221,7 @@ function getContext(url, callback) {
 
   httpRequest.onreadystatechange = function() {
     if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      return callback(httpRequest.status,
-                      JSON.parse(httpRequest.responseText));
+      return callback(httpRequest.status, httpRequest.responseText);
     }
   };
   httpRequest.open('GET', url);
