@@ -185,6 +185,7 @@ function pollAndDisplay() {
       let response = starling.getContext(selectedRoute);
       devices = response.devices || {};
       isPollPending = false;
+      connection.hidden = false;
 
       setContainerHeight();
       renderHyperlocalContext();
