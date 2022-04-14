@@ -47,6 +47,8 @@ pollAndDisplay();
 
 // GET the devices and display in DOM
 function pollAndDisplay() {
+  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
+
   if(!isPollPending) {
     isPollPending = true;
 
@@ -76,7 +78,6 @@ function pollAndDisplay() {
       connection.replaceChildren(statusIcon);
     });
   }
-  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 }
 
 
