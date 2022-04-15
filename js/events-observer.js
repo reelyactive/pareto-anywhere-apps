@@ -22,12 +22,15 @@ const STORY_PLACEHOLDER_IMAGE_PATH = '../images/story-placeholder.png';
 // DOM elements
 let connection = document.querySelector('#connection');
 let demoalert = document.querySelector('#demoalert');
-let eventstable = document.querySelector('#eventstable');
 let eventslist = document.querySelector('#eventslist');
 let time = document.querySelector('#time');
 
 // Other variables
 let eventsCompilation = new Map();
+let eventsStats = {
+    isButtonPressed: { tr: document.querySelector('#isButtonPressed'),
+                       current: '', previous: [ '', '', '' ] }
+};
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 
@@ -90,6 +93,8 @@ function handleDynamb(dynamb) {
 
   if(dynamb.hasOwnProperty('isButtonPressed')) {
     getDeviceContext(deviceSignature, handleDeviceContext);
+    eventsStats['isButtonPressed'].current++;
+    updateEventsRow(eventsStats['isButtonPressed']);
 
     if(isNewDevice) {
       handleNewDeviceEvent(deviceSignature, dynamb.timestamp);
@@ -243,11 +248,23 @@ function updateCard(signature, event, isNewEvent) {
 }
 
 
+// Update a single events row
+function updateEventsRow(eventStats) {
+  let tds = eventStats.tr.getElementsByTagName('td');
+
+  tds[0].textContent = eventStats.current;
+  tds[1].textContent = eventStats.previous[0];
+  tds[2].textContent = eventStats.previous[1];
+  tds[3].textContent = eventStats.previous[2];
+}
+
+
 // Compile statistics, update time and display
 function update() {
   time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 
   updateDisplay();
+  updateStats();
 
   let millisecondsToNextMinute = 60000 - (Date.now() % 60000);
   setTimeout(update, millisecondsToNextMinute);
@@ -259,6 +276,21 @@ function updateDisplay() {
   eventsCompilation.forEach((event, signature) => {
     updateCard(signature, event, false);
   });
+}
+
+
+// Update the stats and the table
+function updateStats() {
+  for(const property in eventsStats) {
+    let eventStats = eventsStats[property];
+
+    eventStats.previous.pop();
+    eventStats.previous.unshift(eventStats.current);
+    eventStats.current = 0;
+
+
+    updateEventsRow(eventStats);
+  }
 }
 
 
