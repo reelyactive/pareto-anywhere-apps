@@ -22,6 +22,7 @@ const STORY_PLACEHOLDER_IMAGE_PATH = '../images/story-placeholder.png';
 // DOM elements
 let connection = document.querySelector('#connection');
 let demoalert = document.querySelector('#demoalert');
+let message = document.querySelector('#message');
 let eventslist = document.querySelector('#eventslist');
 let time = document.querySelector('#time');
 
@@ -206,6 +207,7 @@ function insertCard(parent, signature, event) {
   imgDevice.setAttribute('src', STORY_PLACEHOLDER_IMAGE_PATH);
   imgNearest.setAttribute('src', STORY_PLACEHOLDER_IMAGE_PATH);
 
+  message.hidden = true;
   parent.insertBefore(card, parent.firstChild);
 }
 
