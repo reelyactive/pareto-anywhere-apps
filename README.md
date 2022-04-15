@@ -1,7 +1,15 @@
-Pareto Apps
-===========
+Pareto Anywhere Apps
+====================
 
-Collection of web apps for [Pareto Anywhere](https://www.reelyactive.com/pareto/anywhere/).
+Collection of web apps for [context-aware physical spaces](https://www.reelyactive.com/context-aware-physical-spaces/) bundled with the [Pareto Anywhere](https://www.reelyactive.com/pareto/anywhere/) open source middleware suite.
+
+Visit [https://reelyactive.github.io/pareto-anywhere-apps/](reelyactive.github.io/pareto-anywhere-apps) for a hosted version of these apps, or browse directly to a specific demo as follows:
+- [Hyperlocal Context Explorer](https://reelyactive.github.io/pareto-anywhere-apps/hlc-explorer/?demo=default&updates=periodic)
+- [Live Directory](https://reelyactive.github.io/pareto-anywhere-apps/live-directory/?demo=default)
+- [Occupancy Explorer](https://reelyactive.github.io/pareto-anywhere-apps/occupancy-explorer/?demo=default)
+- [Hello Sniffypedia!](https://reelyactive.github.io/pareto-anywhere-apps/hello-sniffypedia/?demo=default)
+- [Hello dynamb!](https://reelyactive.github.io/pareto-anywhere-apps/hello-dynamb/?demo=default)
+- [Hello beaver!](https://reelyactive.github.io/pareto-anywhere-apps/hello-beaver/?demo=default)
 
 
 License
