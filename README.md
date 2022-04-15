@@ -12,6 +12,12 @@ Visit [reelyactive.github.io/pareto-anywhere-apps](https://reelyactive.github.io
 - [Hello beaver!](https://reelyactive.github.io/pareto-anywhere-apps/hello-beaver/?demo=default)
 
 
+Contributing
+------------
+
+Discover [how to contribute](CONTRIBUTING.md) to this open source project which upholds a standard [code of conduct](CODE_OF_CONDUCT.md).
+
+
 License
 -------
 
