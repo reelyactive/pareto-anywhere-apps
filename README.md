@@ -3,6 +3,8 @@ Pareto Anywhere Apps
 
 Collection of web apps for [context-aware physical spaces](https://www.reelyactive.com/context-aware-physical-spaces/) bundled with the [Pareto Anywhere](https://www.reelyactive.com/pareto/anywhere/) open source middleware suite.
 
+![Pareto Anywhere Apps screenshot](https://reelyactive.github.io/diy/common/images/pareto-anywhere-apps-screenshot.jpg)
+
 Visit [reelyactive.github.io/pareto-anywhere-apps](https://reelyactive.github.io/pareto-anywhere-apps/) for a hosted version of these apps, or browse directly to a specific demo as follows:
 - [Hyperlocal Context Explorer](https://reelyactive.github.io/pareto-anywhere-apps/hlc-explorer/?demo=default&updates=periodic)
 - [Live Directory](https://reelyactive.github.io/pareto-anywhere-apps/live-directory/?demo=default)
