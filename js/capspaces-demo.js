@@ -165,8 +165,12 @@ function handleEvent(dynamb, associations, story) {
   }
 
   if(Array.isArray(dynamb.isContactDetected)) {
-    description = dynamb.isContactDetected.includes(true) ? 'Contact closed' :
-                                                            'Contact opened';
+    description = 'Contact';
+    if(associations && Array.isArray(associations.tags)) {
+      if(associations.tags.includes('door')) { description = 'Door'; }
+    }
+    description += dynamb.isContactDetected.includes(true) ? ' closed' :
+                                                             ' opened';
     deviceEventRows.push(createEventRow(idPrefix + '-isContactDetected',
                                         'fas fa-compress-alt', description,
                                         name, dynamb.timestamp));
@@ -175,6 +179,11 @@ function handleEvent(dynamb, associations, story) {
   if(Array.isArray(dynamb.isMotionDetected) &&
      dynamb.isMotionDetected.includes(true)) {
     description = 'Motion detected';
+    if(associations && Array.isArray(associations.tags)) {
+      if(associations.tags.includes('room')) { description = 'Room occupied'; }
+      if(associations.tags.includes('desk')) { description = 'Desk occupied'; }
+      if(associations.tags.includes('chair')) { description = 'Chair occupied'; }
+    }
     deviceEventRows.push(createEventRow(idPrefix + '-isMotionDetected',
                                         'fas fa-walking', description,
                                         name, dynamb.timestamp));
