@@ -13,8 +13,10 @@ const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 const TIMESTAMP_OPTIONS = { hour: "2-digit", minute: "2-digit",
                             second: "2-digit", hour12: false };
 const DEMO_SEARCH_PARAMETER = 'demo';
-const MAX_STALE_MILLISECONDS = 60000;
+const STALE_MILLISECONDS = 60000;
+const MIN_ANIMATE_MILLISECONDS = 15000;
 const ENVIRONMENTAL_HISTORY_MILLISECONDS = 60000;
+const MAX_LISTED_EVENTS = 8;
 const STORY_PLACEHOLDER_IMAGE_PATH = '../images/story-placeholder.png';
 const CLASS_ICON_NORMAL = 'bg-dark align-middle';
 const CLASS_ICON_ABNORMAL = 'bg-secondary align-middle';
@@ -145,10 +147,8 @@ function handleEnvironmentalData(dynamb) {
 
 // Handle an event
 function handleEvent(dynamb, associations, story) {
-  let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
-                        dynamb.deviceIdType;
   let idPrefix = dynamb.deviceId + '-' + dynamb.deviceIdType;
-  let title = deviceSignature;
+  let name = dynamb.deviceId + SIGNATURE_SEPARATOR + dynamb.deviceIdType;
   let description;
   let deviceEventRows = [];
 
@@ -156,24 +156,24 @@ function handleEvent(dynamb, associations, story) {
      dynamb.isButtonPressed.includes(true)) {
     description = 'Button pressed';
     deviceEventRows.push(createEventRow(idPrefix + '-isButtonPressed',
-                                        'fas fa-hand-pointer', title,
-                                        description, dynamb.timestamp));
+                                        'fas fa-hand-pointer', description,
+                                        name, dynamb.timestamp));
   }
 
   if(Array.isArray(dynamb.isContactDetected)) {
     description = dynamb.isContactDetected.includes(true) ? 'Contact closed' :
                                                             'Contact opened';
     deviceEventRows.push(createEventRow(idPrefix + '-isContactDetected',
-                                        'fas fa-compress-alt', title,
-                                        description, dynamb.timestamp));
+                                        'fas fa-compress-alt', description,
+                                        name, dynamb.timestamp));
   }
 
   if(Array.isArray(dynamb.isMotionDetected) &&
      dynamb.isMotionDetected.includes(true)) {
     description = 'Motion detected';
     deviceEventRows.push(createEventRow(idPrefix + '-isMotionDetected',
-                                        'fas fa-walking', title,
-                                        description, dynamb.timestamp));
+                                        'fas fa-walking', description,
+                                        name, dynamb.timestamp));
   }
 
   if(Array.isArray(dynamb.unicodeCodePoints)) {
@@ -183,8 +183,8 @@ function handleEvent(dynamb, associations, story) {
     }
     let characters = createElement('span', 'display-6', description);
     deviceEventRows.push(createEventRow(idPrefix + '-unicodeCodePoints',
-                                        'fas fa-language', title,
-                                        characters, dynamb.timestamp));
+                                        'fas fa-language', characters,
+                                        name, dynamb.timestamp));
   }
 
   if(deviceEventRows.length > 0) {
@@ -251,15 +251,15 @@ function updateEnvironmentalIndicator(name, value, timestamp) {
 
 
 // Create an event row
-function createEventRow(id, iconClass, title, description, timestamp) {
-  let icon = createElement('i', iconClass);
-  let iconCol = createElement('th', 'display-6', icon);
-  let titleCol = createElement('td', null, title);
-  let descriptionCol = createElement('td', null, description);
+function createEventRow(id, iconClass, description, device, timestamp) {
+  let icon = createElement('i', iconClass + ' display-6');
+  let iconCol = createElement('th', 'table-primary animate-breathing', icon);
+  let deviceCol = createElement('td', null, device);
+  let descriptionCol = createElement('td', 'fw-bold', description);
   let time = new Date(timestamp).toLocaleTimeString([], TIMESTAMP_OPTIONS);
   let timestampCol = createElement('td', null, time);
   let tr = createElement('tr', 'align-middle',
-                         [ iconCol, titleCol, descriptionCol, timestampCol ]);
+                         [ iconCol, descriptionCol, deviceCol, timestampCol ]);
   tr.id = id;
   tr.timestamp = timestamp;
 
@@ -294,15 +294,22 @@ function updateEventsTable(eventRows) {
     });
   }
 
-  // Remove stale events
+  // Remove/modify events based on time and quantiy
   if(eventslist.hasChildNodes()) {
-    let staleTimestampThreshold = Date.now() - MAX_STALE_MILLISECONDS;
+    let staleTimestampThreshold = Date.now() - STALE_MILLISECONDS;
+    let animateTimestampThreshold = Date.now() - MIN_ANIMATE_MILLISECONDS;
 
-    for(const row of eventslist.childNodes) {
-      if(row.timestamp < staleTimestampThreshold) {
+    eventslist.childNodes.forEach((row, index) => {
+      if(index >= MAX_LISTED_EVENTS) {
         eventslist.removeChild(row);
       }
-    }
+      else if(row.timestamp < staleTimestampThreshold) {
+        row.setAttribute('class', 'align-middle text-muted');
+      }
+      else if(row.timestamp < animateTimestampThreshold) {
+        row.firstChild.setAttribute('class', '');
+      }
+    });
   }
 }
 
