@@ -152,6 +152,10 @@ function handleEvent(dynamb, associations, story) {
   let description;
   let deviceEventRows = [];
 
+  if(story) {
+    name = cuttlefishStory.determineTitle(story) || name;
+  }
+
   if(Array.isArray(dynamb.isButtonPressed) &&
      dynamb.isButtonPressed.includes(true)) {
     description = 'Button pressed';
