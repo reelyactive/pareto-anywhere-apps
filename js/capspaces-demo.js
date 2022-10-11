@@ -10,14 +10,11 @@ const DYNAMB_ROUTE = '/devices/dynamb';
 const DEVICE_CONTEXT_ROUTE = '/context/device';
 const SIGNATURE_SEPARATOR = '/';
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
+const TIMESTAMP_OPTIONS = { hour: "2-digit", minute: "2-digit",
+                            second: "2-digit", hour12: false };
 const DEMO_SEARCH_PARAMETER = 'demo';
 const MAX_STALE_MILLISECONDS = 60000;
 const ENVIRONMENTAL_HISTORY_MILLISECONDS = 60000;
-const ID_TITLE_SUFFIX = '-title';
-const ID_NEAREST_SUFFIX = '-nearest';
-const ID_TIME_SUFFIX = '-time';
-const ID_IMG_DEVICE_SUFFIX = '-img-device';
-const ID_IMG_NEAREST_SUFFIX = '-img-nearest';
 const STORY_PLACEHOLDER_IMAGE_PATH = '../images/story-placeholder.png';
 const CLASS_ICON_NORMAL = 'bg-dark align-middle';
 const CLASS_ICON_ABNORMAL = 'bg-secondary align-middle';
@@ -37,7 +34,6 @@ let eventslist = document.querySelector('#eventslist');
 let time = document.querySelector('#time');
 
 // Other variables
-let deviceEvents = new Map();
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let environmentalIndicators = {
@@ -120,7 +116,12 @@ function handleDynamb(dynamb) {
      dynamb.hasOwnProperty('isContactDetected') ||
      dynamb.hasOwnProperty('isMotionDetected') ||
      dynamb.hasOwnProperty('unicodeCodePoints')) {
-    handleEvent(dynamb);
+    let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
+                          dynamb.deviceIdType;
+    cormorant.retrieveAssociations(baseUrl, deviceSignature, true,
+                                   (associations, story) => {
+      handleEvent(dynamb, associations, story);
+    });
   }
 }
 
@@ -143,14 +144,52 @@ function handleEnvironmentalData(dynamb) {
 
 
 // Handle an event
-function handleEvent(dynamb) {
+function handleEvent(dynamb, associations, story) {
   let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
                         dynamb.deviceIdType;
+  let idPrefix = dynamb.deviceId + '-' + dynamb.deviceIdType;
+  let title = deviceSignature;
+  let description;
+  let deviceEventRows = [];
 
-  cormorant.retrieveAssociations(baseUrl, deviceSignature, true,
-                                 (associations, story) => {
-    // TODO: display event
-  });
+  if(Array.isArray(dynamb.isButtonPressed) &&
+     dynamb.isButtonPressed.includes(true)) {
+    description = 'Button pressed';
+    deviceEventRows.push(createEventRow(idPrefix + '-isButtonPressed',
+                                        'fas fa-hand-pointer', title,
+                                        description, dynamb.timestamp));
+  }
+
+  if(Array.isArray(dynamb.isContactDetected)) {
+    description = dynamb.isContactDetected.includes(true) ? 'Contact closed' :
+                                                            'Contact opened';
+    deviceEventRows.push(createEventRow(idPrefix + '-isContactDetected',
+                                        'fas fa-compress-alt', title,
+                                        description, dynamb.timestamp));
+  }
+
+  if(Array.isArray(dynamb.isMotionDetected) &&
+     dynamb.isMotionDetected.includes(true)) {
+    description = 'Motion detected';
+    deviceEventRows.push(createEventRow(idPrefix + '-isMotionDetected',
+                                        'fas fa-walking', title,
+                                        description, dynamb.timestamp));
+  }
+
+  if(Array.isArray(dynamb.unicodeCodePoints)) {
+    description = '';
+    for(const codePoint of dynamb.unicodeCodePoints) {
+      description += String.fromCodePoint(codePoint);
+    }
+    let characters = createElement('span', 'display-6', description);
+    deviceEventRows.push(createEventRow(idPrefix + '-unicodeCodePoints',
+                                        'fas fa-language', title,
+                                        characters, dynamb.timestamp));
+  }
+
+  if(deviceEventRows.length > 0) {
+    updateEventsTable(deviceEventRows);
+  }
 }
 
 
@@ -211,79 +250,20 @@ function updateEnvironmentalIndicator(name, value, timestamp) {
 }
 
 
-// Create and insert an event card
-function insertCard(parent, signature, event) {
-  let time = new Date(event.timestamp).toLocaleTimeString([], TIME_OPTIONS);
+// Create an event row
+function createEventRow(id, iconClass, title, description, timestamp) {
+  let icon = createElement('i', iconClass);
+  let iconCol = createElement('th', 'display-6', icon);
+  let titleCol = createElement('td', null, title);
+  let descriptionCol = createElement('td', null, description);
+  let time = new Date(timestamp).toLocaleTimeString([], TIMESTAMP_OPTIONS);
+  let timestampCol = createElement('td', null, time);
+  let tr = createElement('tr', 'align-middle',
+                         [ iconCol, titleCol, descriptionCol, timestampCol ]);
+  tr.id = id;
+  tr.timestamp = timestamp;
 
-  let iconButton = createElement('i', 'fas fa-hand-pointer');
-  let iconNearest = createElement('i', 'fas fa-map-pin');
-  let spanTitle = createElement('span', null, signature);
-  let cardTitle = createElement('h5', 'card-title',
-                                [ iconButton, ' \u00a0', spanTitle ]);
-  let spanNearest = createElement('span', null, '');
-  let cardText = createElement('p', 'card-text text-muted',
-                               [ iconNearest, ' \u00a0', spanNearest ]);
-  let cardBody = createElement('div', 'card-body', [ cardTitle, cardText ]);
-  let cardFooter = createElement('div', 'card-footer bg-dark text-white animate-breathing text-center mt-auto', time);
-  let imgDevice = createElement('img', 'img-fluid');
-  let imgNearest = createElement('img', 'img-fluid');
-  let leftCol = createElement('div', 'col-3 align-self-center', imgDevice);
-  let centreCol = createElement('div',
-                                'col-6 d-flex align-items-stretch flex-column',
-                                [ cardBody, cardFooter ]);
-  let rightCol = createElement('div', 'col-3 align-self-center', imgNearest);
-  let row = createElement('div', 'row g-0', [ leftCol, centreCol, rightCol ]);
-  let card = createElement('div', 'card rounded hover-shadow mb-3', row);
-
-  card.setAttribute('id', signature);
-  spanTitle.setAttribute('id', signature + ID_TITLE_SUFFIX);
-  spanNearest.setAttribute('id', signature + ID_NEAREST_SUFFIX);
-  cardFooter.setAttribute('id', signature + ID_TIME_SUFFIX);
-  imgDevice.setAttribute('id', signature + ID_IMG_DEVICE_SUFFIX);
-  imgNearest.setAttribute('id', signature + ID_IMG_NEAREST_SUFFIX);
-  imgDevice.setAttribute('src', STORY_PLACEHOLDER_IMAGE_PATH);
-  imgNearest.setAttribute('src', STORY_PLACEHOLDER_IMAGE_PATH);
-
-  message.hidden = true;
-  parent.insertBefore(card, parent.firstChild);
-}
-
-
-// Update an existing event card
-function updateCard(signature, event, isNewEvent) {
-  let isStaleEvent = (Date.now() - event.timestamp) > MAX_STALE_MILLISECONDS;
-  let spanTitle = document.getElementById(signature + ID_TITLE_SUFFIX);
-  let spanNearest = document.getElementById(signature + ID_NEAREST_SUFFIX);
-  let imgDevice = document.getElementById(signature + ID_IMG_DEVICE_SUFFIX);
-  let imgNearest = document.getElementById(signature + ID_IMG_NEAREST_SUFFIX);
-  let cardFooter = document.getElementById(signature + ID_TIME_SUFFIX);
-  let time = new Date(event.timestamp).toLocaleTimeString([], TIME_OPTIONS);
-
-  if(isStaleEvent) {
-    cardFooter.setAttribute('class',
-                            'card-footer bg-white text-center mt-auto');
-  }
-  else {
-    cardFooter.setAttribute('class', 'card-footer bg-dark text-white animate-breathing text-center mt-auto');
-  }
-
-  if(event.deviceUri && cormorant.stories[event.deviceUri]) {
-    let story = cormorant.stories[event.deviceUri];
-    spanTitle.textContent = cuttlefishStory.determineTitle(story);
-    imgDevice.setAttribute('src', cuttlefishStory.determineImageUrl(story));
-  }
-  if(event.nearestUri && cormorant.stories[event.nearestUri]) {
-    let story = cormorant.stories[event.nearestUri];
-    spanNearest.textContent = cuttlefishStory.determineTitle(story);
-    imgNearest.setAttribute('src', cuttlefishStory.determineImageUrl(story));
-  }
-
-  cardFooter.textContent = time;
-
-  if(isNewEvent) {
-    let card = document.getElementById(signature);
-    eventslist.insertBefore(card, eventslist.firstChild);
-  }
+  return tr;
 }
 
 
@@ -291,18 +271,39 @@ function updateCard(signature, event, isNewEvent) {
 function update() {
   time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 
-  updateEventsDisplay();
+  updateEventsTable();
 
   let millisecondsToNextMinute = 60000 - (Date.now() % 60000);
   setTimeout(update, millisecondsToNextMinute);
 }
 
 
-// Update the events display
-function updateEventsDisplay() {
-  deviceEvents.forEach((event, signature) => {
-    // TODO
-  });
+// Update the events table
+function updateEventsTable(eventRows) {
+  let isNewEvents = Array.isArray(eventRows) && (eventRows.length > 0);
+
+  // Insert/update latest events
+  if(isNewEvents) {
+    eventRows.forEach(row => {
+      let existingRow = document.querySelector('#' + row.id);
+
+      if(existingRow) {
+        existingRow.replaceWith(row);
+      }
+      eventslist.insertBefore(row, eventslist.firstChild);
+    });
+  }
+
+  // Remove stale events
+  if(eventslist.hasChildNodes()) {
+    let staleTimestampThreshold = Date.now() - MAX_STALE_MILLISECONDS;
+
+    for(const row of eventslist.childNodes) {
+      if(row.timestamp < staleTimestampThreshold) {
+        eventslist.removeChild(row);
+      }
+    }
+  }
 }
 
 
