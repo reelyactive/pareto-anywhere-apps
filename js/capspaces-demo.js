@@ -183,6 +183,7 @@ function handleEvent(dynamb, associations, story) {
       if(associations.tags.includes('room')) { description = 'Room occupied'; }
       if(associations.tags.includes('desk')) { description = 'Desk occupied'; }
       if(associations.tags.includes('chair')) { description = 'Chair occupied'; }
+      if(associations.tags.includes('door')) { description = 'Door activity'; }
     }
     deviceEventRows.push(createEventRow(idPrefix + '-isMotionDetected',
                                         'fas fa-walking', description,
