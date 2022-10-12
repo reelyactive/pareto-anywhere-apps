@@ -32,6 +32,7 @@ const CLASS_PROGRESS_EDGE_ACTIVE = 'progress-bar bg-secondary bg-gradient animat
 let connection = document.querySelector('#connection');
 let demoalert = document.querySelector('#demoalert');
 let message = document.querySelector('#message');
+let knob = document.querySelector('#knob');
 let eventslist = document.querySelector('#eventslist');
 let time = document.querySelector('#time');
 
@@ -108,6 +109,9 @@ update();
 
 // Handle a dynamb event
 function handleDynamb(dynamb) {
+  if(dynamb.hasOwnProperty('angleOfRotation')) {
+    updateKnobSelector(dynamb);
+  }
   if(dynamb.hasOwnProperty('temperature') ||
      dynamb.hasOwnProperty('relativeHumidity') ||
      dynamb.hasOwnProperty('illuminance')) {
@@ -125,6 +129,15 @@ function handleDynamb(dynamb) {
       handleEvent(dynamb, associations, story);
     });
   }
+}
+
+
+// Update the knob selector
+function updateKnobSelector(dynamb) {
+  let angle = dynamb.angleOfRotation || 0;
+  knob.setAttribute('style', 'transform: rotate(' + angle.toFixed(0) + 'deg)');
+
+  // TODO: update demo
 }
 
 
