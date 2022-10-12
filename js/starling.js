@@ -126,7 +126,7 @@ let starling = (function() {
         return [ (Math.random() * 2) - 1, (Math.random() * 2) - 1,
                  (Math.random() * 2) - 1 ];
       case 'illuminance':
-        return Math.round(Math.random() * 10000);
+        return Math.round(Math.random() * 1000);
       case 'isButtonPressed':
         return [ randomBoolean ];
       case 'isContactDetected':
