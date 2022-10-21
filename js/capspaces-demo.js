@@ -178,15 +178,27 @@ function handleEvent(dynamb, associations, story) {
   }
 
   if(Array.isArray(dynamb.isContactDetected)) {
-    description = 'Contact';
-    if(associations && Array.isArray(associations.tags)) {
-      if(associations.tags.includes('door')) { description = 'Door'; }
+    if(associations && Array.isArray(associations.tags) &&
+       associations.tags.includes('tamper')) {
+      if(!dynamb.isContactDetected.includes(true)) {
+        description = 'Tamper detected';
+        deviceEventRows.push(createEventRow(idPrefix + '-isContactDetected',
+                                            'fas fa-exclamation-triangle',
+                                            description, name,
+                                            dynamb.timestamp));
+      }
     }
-    description += dynamb.isContactDetected.includes(true) ? ' closed' :
-                                                             ' opened';
-    deviceEventRows.push(createEventRow(idPrefix + '-isContactDetected',
-                                        'fas fa-compress-alt', description,
-                                        name, dynamb.timestamp));
+    else {
+      description = 'Contact';
+      if(associations && Array.isArray(associations.tags)) {
+        if(associations.tags.includes('door')) { description = 'Door'; }
+      }
+      description += dynamb.isContactDetected.includes(true) ? ' closed' :
+                                                               ' opened';
+      deviceEventRows.push(createEventRow(idPrefix + '-isContactDetected',
+                                          'fas fa-compress-alt', description,
+                                          name, dynamb.timestamp));
+    }
   }
 
   if(Array.isArray(dynamb.isMotionDetected) &&
