@@ -11,7 +11,7 @@ const DIRECTORY_SEPARATOR = ':';
 const POLLING_INTERVAL_MILLISECONDS = 5000;
 const CONTEXT_ROUTE = '/context';
 const SNIFFYPEDIA_BASE_URI = 'https://sniffypedia.org/';
-const ACCEPTED_STORY_TYPES = [ 'schema:Person', 'schema:Product' ];
+const ACCEPTED_STORY_TYPES = [ 'schema:Person' ];
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 const DEMO_SEARCH_PARAMETER = 'demo';
 
