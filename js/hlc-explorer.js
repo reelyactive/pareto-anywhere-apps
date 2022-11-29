@@ -428,8 +428,14 @@ function determineDeviceName(device) {
     return device.tags[0];
   }
 
-  if(device.hasOwnProperty('position')) {
-    return device.position;
+  if(Array.isArray(device.position)) {
+    let position = '';
+
+    device.position.forEach((coordinate) => {
+      position += coordinate.toFixed(6) + ', ';
+    });
+    
+    return position.substring(0, position.length - 2);
   }
 
   return '';
