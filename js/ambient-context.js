@@ -30,7 +30,8 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 let continuousDataTable = new ContinuousDataTable('#continuousData',
                                                   beaver.devices);
 let discreteDataTable = new DiscreteDataTable('#discreteData',
-                                              { isClockDisplayed: true });
+                                              { isClockDisplayed: true,
+                                                maxRows: 10 });
 
 // Handle beaver events
 beaver.on('dynamb', (dynamb) => { discreteDataTable.handleDynamb(dynamb); });
