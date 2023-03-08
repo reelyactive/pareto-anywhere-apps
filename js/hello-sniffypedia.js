@@ -61,6 +61,7 @@ function pollAndDisplay() {
       if(status === STATUS_OK) {
         let devices = JSON.parse(response).devices || {};
         statusIcon = createElement('i', 'fas fa-cloud text-success');
+        demoalert.hidden = true;
         updateDisplay(devices);
       }
       else {

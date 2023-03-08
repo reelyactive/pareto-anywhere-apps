@@ -48,6 +48,7 @@ else {
   // Display changes to the socket.io connection status
   socket.on("connect", function() {
     connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+    demoalert.hidden = true;
   });
   socket.on("connect_error", function() {
     connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
