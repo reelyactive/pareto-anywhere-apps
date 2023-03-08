@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2021-2022
+ * Copyright reelyActive 2021-2023
  * We believe in an open Internet of Things
  */
 
@@ -60,7 +60,7 @@ const GRAPH_STYLE = [
 ];
 
 // DOM elements
-let connection = document.querySelector('#connection');
+let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let reinitialise = document.querySelector('#reinitialise');
 let noUpdates = document.querySelector('#settingsNoUpdates');
@@ -110,9 +110,8 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 // Demo mode: update connection status
 if(isDemo) {
-  connection.replaceChildren(createElement('b',
-                                           'animate-breathing text-success',
-                                           'DEMO'));
+  let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  connectIcon.replaceChildren(demoIcon);
 }
 
 
@@ -185,7 +184,7 @@ function pollAndDisplay() {
       let response = starling.getContext(selectedRoute);
       devices = response.devices || {};
       isPollPending = false;
-      connection.hidden = false;
+      connectIcon.hidden = false;
 
       setContainerHeight();
       renderHyperlocalContext();
@@ -206,11 +205,11 @@ function pollAndDisplay() {
         fetchStories();
       }
       else {
-        connection.hidden = false;
+        connectIcon.hidden = false;
         demoalert.hidden = false;
       }
 
-      connection.replaceChildren(statusIcon);
+      connectIcon.replaceChildren(statusIcon);
     });
   }
 }
@@ -236,7 +235,7 @@ function createSocket() {
   socket = io(baseUrl + selectedRoute);
 
   socket.on('connect', function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
   });
 
   socket.on('devices', function(updatedDevices) {
@@ -253,11 +252,11 @@ function createSocket() {
   });
 
   socket.on('connect_error', function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
   });
 
   socket.on('disconnect', function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
   });
 }
 
@@ -294,19 +293,19 @@ function updateQuery(event) {
 // Update the update method
 function updateUpdates(event) {
   if(noUpdates.checked) {
-    connection.hidden = true;
+    connectIcon.hidden = true;
     if(socket) { socket.disconnect(); }
     clearInterval(pollingInterval);
   }
 
   if(realTimeUpdates.checked) { 
-    connection.hidden = false;
+    connectIcon.hidden = false;
     clearInterval(pollingInterval);
     createSocket();
   }
 
   if(periodicUpdates.checked) {
-    connection.hidden = true;
+    connectIcon.hidden = true;
     if(socket) { socket.disconnect(); }
     pollAndDisplay();
     pollingInterval = setInterval(pollAndDisplay,
@@ -328,7 +327,8 @@ function fetchStories() {
     }
 
     if(url) {
-      cormorant.retrieveStory(url, function(story) {
+      cormorant.retrieveStory(url, { isStoryToBeRefetched: false },
+                              (story, status) => {
         let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
         if(story && isExistingNode) {
           let node = cy.getElementById(deviceSignature);
@@ -346,13 +346,13 @@ function fetchStories() {
 
 // Retrieve the device story if already fetched by cormorant
 function retrieveDeviceStory(device) {
-  if(device.url && cormorant.stories[device.url]) {
-    return cormorant.stories[device.url];
+  if(device.url && cormorant.stories.has(device.url)) {
+    return cormorant.stories.get(device.url);
   }
 
   if(device.hasOwnProperty('statid') && device.statid.uri &&
-     cormorant.stories[device.statid.uri]) {
-    return cormorant.stories[device.statid.uri];
+     cormorant.stories.has(device.statid.uri)) {
+    return cormorant.stories.get(device.statid.uri);
   }
 
   return null;

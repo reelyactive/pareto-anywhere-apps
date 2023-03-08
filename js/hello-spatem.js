@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022
+ * Copyright reelyActive 2022-2023
  * We believe in an open Internet of Things
  */
 
@@ -11,7 +11,7 @@ const DEFAULT_UPDATE_MILLISECONDS = 5000;
 const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
-let connection = document.querySelector('#connection');
+let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let message = document.querySelector('#message');
 let latestspatem = document.querySelector('#latestspatem');
@@ -26,10 +26,9 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
+  let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  connectIcon.replaceChildren(demoIcon);
   starling.on("spatem", handleSpatem);
-  connection.replaceChildren(createElement('b',
-                                           'animate-breathing text-success',
-                                           'DEMO'));
 }
 
 // Normal mode: connect to socket.io
@@ -39,17 +38,16 @@ else {
   let socket = io(baseUrl);
   socket.on("spatem", handleSpatem);
 
-
   // Display changes to the socket.io connection status
   socket.on("connect", function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
   });
   socket.on("connect_error", function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
     demoalert.hidden = false;
   });
   socket.on("disconnect", function(reason) {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
   });
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2016-2020
+ * Copyright reelyActive 2016-2023
  * We believe in an open Internet of Things
  */
 
@@ -11,8 +11,8 @@ let cormorant = (function() {
   const SIGNATURE_SEPARATOR = '/';
 
   // Internal variables
-  let associations = {};
-  let stories = {};
+  let associations = new Map();
+  let stories = new Map();
 
   // Extract the JSON-LD, if present, from the given HTML
   function extractFromHtml(html) {
@@ -50,7 +50,7 @@ let cormorant = (function() {
   function retrieve(url, acceptHeaders, callback) {
     let httpRequest = new XMLHttpRequest();
 
-    httpRequest.onreadystatechange = function() {
+    httpRequest.onreadystatechange = () => {
       if(httpRequest.readyState === XMLHttpRequest.DONE) {
         let contentType = httpRequest.getResponseHeader('Content-Type');
         return callback(httpRequest.status, httpRequest.responseText,
@@ -62,11 +62,12 @@ let cormorant = (function() {
     httpRequest.send();
   }
 
-  // Get the associations for the given device identifier
-  function retrieveAssociations(serverUrl, deviceId, isStoryToBeRetrieved,
-                                callback) {
-    let url = serverUrl + '/associations/' + deviceId;
-    retrieve(url, 'application/json', function(status, responseText) {
+  // Get the associations for the given device signature
+  function retrieveAssociations(serverUrl, deviceSignature, options, callback) {
+    options = options || {};
+    let url = serverUrl + '/associations/' + deviceSignature;
+
+    retrieve(url, 'application/json', (status, responseText) => {
       let deviceAssociations = null;
       let isStoryBeingRetrieved = false;
 
@@ -74,20 +75,20 @@ let cormorant = (function() {
         let response = JSON.parse(responseText);
         let returnedDeviceId = null;
         if(response.hasOwnProperty('associations')) { // chickadee v1.x
-          returnedDeviceId = Object.keys(response.associations)[0];
-          deviceAssociations = response.associations[returnedDeviceId];
+          returnedDeviceSignature = Object.keys(response.associations)[0];
+          deviceAssociations = response.associations[returnedDeviceSignature];
         }
         else if(response.hasOwnProperty('devices')) { // chickadee v0.x
-          returnedDeviceId = Object.keys(response.devices)[0];
-          deviceAssociations = response.devices[returnedDeviceId];
+          returnedDeviceSignature = Object.keys(response.devices)[0];
+          deviceAssociations = response.devices[returnedDeviceSignature];
         }
-        associations[deviceId] = deviceAssociations;
-        associations[returnedDeviceId] = deviceAssociations;
+        associations.set(deviceSignature, deviceAssociations);
+        associations.set(returnedDeviceSignature, deviceAssociations);
 
-        if(isStoryToBeRetrieved && deviceAssociations.url) {
+        if(options.isStoryToBeRetrieved && deviceAssociations.url) {
           isStoryBeingRetrieved = true;
-          retrieveStory(deviceAssociations.url, function(story) {
-            return callback(deviceAssociations, story);
+          retrieveStory(deviceAssociations.url, options, (story, status) => {
+            return callback(deviceAssociations, story, status);
           });
         }
       }
@@ -99,15 +100,17 @@ let cormorant = (function() {
   }
 
   // Get the story for the given URL
-  function retrieveStory(storyUrl, callback) {
-    if(stories.hasOwnProperty(storyUrl)) {
-      return callback(stories[storyUrl]);
+  function retrieveStory(storyUrl, options, callback) {
+    options = options || {};
+
+    if(stories.has(storyUrl) && !options.isStoryToBeRefetched) {
+      return callback(stories.get(storyUrl), undefined);
     }
 
     retrieve(storyUrl, 'application/json, text/plain',
-             function(status, responseText, contentType) {
+             (status, responseText, contentType) => {
       if(status !== STATUS_OK) {
-        return callback(null);
+        return callback(null, status);
       }
 
       let isJson = (contentType.indexOf('application/json') === 0);
@@ -119,9 +122,9 @@ let cormorant = (function() {
         story = extractFromHtml(responseText);
       }
       if(story) {
-        stories[storyUrl] = story;
+        stories.set(storyUrl, story);
       }
-      return callback(story);
+      return callback(story, status);
     });
   }
 

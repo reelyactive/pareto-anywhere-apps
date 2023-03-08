@@ -61,11 +61,12 @@ let starling = (function() {
   let DEFAULT_UPDATE_CYCLE_MILLISECONDS = 4000;
 
   // Internal variables
-  let eventCallbacks = { raddec: [], dynamb: [] };
+  let eventCallbacks = { raddec: [], dynamb: [], connect: [] };
   let transmitters = DEFAULT_TRANSMITTERS;
   let receivers = DEFAULT_RECEIVERS;
   let transmitterIndex = 0;
   let isEmulating = false;
+  let isConnect = false;
 
   // Emulate a raddec
   function createRaddec(transmitter, receivers) {
@@ -195,9 +196,19 @@ let starling = (function() {
         callback(dynamb);
       });
     }
+    if(isConnect) {
+      eventCallbacks.connect.forEach((callback) => callback());
+      isConnect = false;
+    }
 
     transmitterIndex = (transmitterIndex + 1) % transmitters.length;
     setTimeout(iterate, interval);
+  }
+
+  // Emulate a connection
+  let connect = function(url) {
+    isConnect = true;
+    return this;
   }
 
   // Get the (emulated) context for a specific route
@@ -222,7 +233,8 @@ let starling = (function() {
   // Expose the following functions and variables
   return {
     on: setEventCallback,
-    getContext: getContext
+    getContext: getContext,
+    connect: connect
   }
 
 }());

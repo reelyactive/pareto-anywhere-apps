@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022
+ * Copyright reelyActive 2022-2023
  * We believe in an open Internet of Things
  */
 
@@ -11,7 +11,7 @@ const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
-let connection = document.querySelector('#connection');
+let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let occupancytable = document.querySelector('#occupancytable');
 let chairsoccupied = document.querySelector('#chairsoccupied');
@@ -36,10 +36,9 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
+  let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  connectIcon.replaceChildren(demoIcon);
   starling.on("dynamb", handleDynamb);
-  connection.replaceChildren(createElement('b',
-                                           'animate-breathing text-success',
-                                           'DEMO'));
 }
 
 // Normal mode: connect to socket.io
@@ -47,17 +46,16 @@ else {
   let socket = io(baseUrl + DYNAMB_ROUTE);
   socket.on("dynamb", handleDynamb);
 
-
   // Display changes to the socket.io connection status
   socket.on("connect", function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
   });
   socket.on("connect_error", function() {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
     demoalert.hidden = false;
   });
   socket.on("disconnect", function(reason) {
-    connection.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
   });
 }
 
@@ -99,8 +97,9 @@ function handleDynamb(dynamb) {
 
 // Retrieve the associations and story, if any, for the given device
 function retrieveMetadata(deviceSignature) {
-  cormorant.retrieveAssociations(baseUrl, deviceSignature, true,
-                                 function(associations, story) {
+  cormorant.retrieveAssociations(baseUrl, deviceSignature, 
+                                 { isStoryToBeRetrieved: true },
+                                 (associations, story, status) => {
     if(associations) { 
       let status = occupancyCompilation.get(deviceSignature) ||
                    { current: null, previous: [ null, null, null ], tags: [] };

@@ -16,7 +16,7 @@ const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
-let connection = document.querySelector('#connection');
+let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let storycolumn = document.querySelector('#storycolumn');
 let chartable = document.querySelector('#chartable');
@@ -35,9 +35,8 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 // Demo mode: update connection status
 if(isDemo) {
-  connection.replaceChildren(createElement('b',
-                                           'animate-breathing text-success',
-                                           'DEMO'));
+  let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  connectIcon.replaceChildren(demoIcon);
 }
 
 
@@ -70,12 +69,12 @@ function pollAndDisplay() {
         updateDisplay(devices);
       }
       else {
-        connection.hidden = false;
+        connectIcon.hidden = false;
         demoalert.hidden = false;
         updateDisplay({});
       }
 
-      connection.replaceChildren(statusIcon);
+      connectIcon.replaceChildren(statusIcon);
     });
   }
 }
@@ -134,10 +133,10 @@ function prepareStoryCards(devices) {
     }
 
     if(uri) {
-      let isStoryFetched = cormorant.stories.hasOwnProperty(uri);
+      let isStoryFetched = cormorant.stories.has(uri);
 
       if(isStoryFetched) {
-        let story = cormorant.stories[uri];
+        let story = cormorant.stories.get(uri);
         if(isAcceptedStoryType(story, ACCEPTED_STORY_TYPES)) {
           let card = cuttlefishStory.render(story);
           let col = createElement('div', 'col', card);
@@ -146,7 +145,8 @@ function prepareStoryCards(devices) {
         }
       }
       else {
-        cormorant.retrieveStory(uri, function(story) {
+        cormorant.retrieveStory(uri, { isStoryToBeRefetched: false },
+                                (story, status) => {
           if(isAcceptedStoryType(story, ACCEPTED_STORY_TYPES)) {
             let card = cuttlefishStory.render(story);
             let col = createElement('div', 'col', card);

@@ -34,7 +34,7 @@
           <!-- Right-aligned navigation items -->
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a id="connection" class="nav-link">
+              <a id="connectIcon" class="nav-link">
                 <i class="fas fa-cloud"></i>
               </a>
             </li>
@@ -58,6 +58,16 @@
                   </a>
                 </li>
                 <li class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/beaver" >
+                    <i class="fab fa-js"></i>
+                    beaver.js &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
                 <li>
                   <a class="dropdown-item" target="_blank"
                      href="https://getbootstrap.com" >
@@ -138,170 +148,37 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"
                     aria-label="Close"></button>
           </div>
-          <div class="row mt-5">
-            <div class="col-md-6 mb-3">
-              <table class="table table-hover text-center">
-                <tbody>
-                  <tr>
-                    <td>
-                      <div class="form-switch">
-                        <input class="form-check-input align-middle" checked
-                               type="checkbox" id="filterAppearances">
-                      </div>
-                    </td>
-                    <th class="bg-dark text-white align-middle lead">
-                      <i class="fas fa-sign-in-alt"></i>
-                    </th>
-                    <td class="align-middle"> Appearances </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="form-switch">
-                        <input class="form-check-input align-middle" checked
-                               type="checkbox" id="filterDisplacements">
-                      </div>
-                    </td>
-                    <th class="bg-dark text-white align-middle lead">
-                      <i class="fas fa-route"></i>
-                    </th>
-                    <td class="align-middle"> Displacements </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="form-switch">
-                        <input class="form-check-input align-middle" checked
-                               type="checkbox" id="filterPackets">
-                      </div>
-                    </td>
-                    <th class="bg-dark text-white align-middle lead">
-                      <i class="fas fa-info"></i>
-                    </th>
-                    <td class="align-middle"> Packets </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="form-switch">
-                        <input class="form-check-input align-middle" checked
-                               type="checkbox" id="filterKeepalives">
-                      </div>
-                    </td>
-                    <th class="bg-dark text-white align-middle lead">
-                      <i class="fas fa-heartbeat"></i>
-                    </th>
-                    <td class="align-middle"> Keep-Alives </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div class="form-switch">
-                        <input class="form-check-input align-middle" disabled
-                               type="checkbox" id="filterDisappearances">
-                      </div>
-                    </td>
-                    <th class="bg-dark text-white align-middle lead">
-                      <i class="fas fa-sign-out-alt"></i>
-                    </th>
-                    <td class="align-middle"> Disappearances </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="col-md-6">
-              <table class="table text-center">
-                <tbody>
-                  <tr>
-                    <td class="align-middle w-75">
-                      <div class="progress">
-                        <div id="progressAppearances" class="progress-bar"
-                             role="progressbar" style="width: 0%"> 0 </div>
-                      </div>
-                    </td>
-                    <th class="align-middle lead">
-                      <i class="fas fa-sign-in-alt"></i>
-                      <span class="text-muted small"> / sec </span>
-                    </th>
-                  </tr>
-                  <tr>
-                    <td class="align-middle w-75">
-                      <div class="progress">
-                        <div id="progressDisplacements" class="progress-bar"
-                             role="progressbar" style="width: 0%"> 0 </div>
-                      </div>
-                    </td>
-                    <th class="align-middle lead">
-                      <i class="fas fa-route"></i>
-                      <span class="text-muted small"> / sec </span>
-                    </th>
-                  </tr>
-                  <tr>
-                    <td class="align-middle w-75">
-                      <div class="progress">
-                        <div id="progressPackets" class="progress-bar"
-                             role="progressbar" style="width: 0%"> 0 </div>
-                      </div>
-                    </td>
-                    <th class="align-middle lead">
-                      <i class="fas fa-info"></i>
-                      <span class="text-muted small"> / sec </span>
-                    </th>
-                  </tr>
-                  <tr>
-                    <td class="align-middle w-75">
-                      <div class="progress">
-                        <div id="progressKeepalives" class="progress-bar"
-                             role="progressbar" style="width: 0%"> 0 </div>
-                      </div>
-                    </td>
-                    <th class="align-middle lead">
-                      <i class="fas fa-heartbeat"></i>
-                      <span class="text-muted small"> / sec </span>
-                    </th>
-                  </tr>
-                  <tr>
-                    <td class="align-middle w-75">
-                      <div class="progress">
-                        <div id="progressDisappearances" class="progress-bar bg-info"
-                             role="progressbar" style="width: 0%"> 0 </div>
-                      </div>
-                    </td>
-                    <th class="align-middle lead">
-                      <i class="fas fa-sign-out-alt"></i>
-                      <span class="text-muted small"> / sec </span>
-                    </th>
-                  </tr>
-                </tbody>
-              </table>
+          <div id="statsDisplay" class="my-5" hidden>
+            <p class="small font-monospace text-muted mb-1">
+              beaver.on('stats', (stats) => {})
+            </p>
+            <div class="card-group text-dark text-center">
+              <div class="card">
+                <div class="card-body">
+                  <span id="deviceCount" class="card-text display-4"> 0 </span>
+                </div>
+                <div class="card-footer bg-dark text-white"> devices </div>
+              </div>
+              <div class="card">
+                <div class="card-body">
+                  <span id="raddecRate" class="card-text display-4"> 0.0 </span>
+                </div>
+                <div class="card-footer bg-dark text-white"> raddec/s </div>
+              </div>
+              <div class="card">
+                <div class="card-body">
+                  <span id="dynambRate" class="card-text display-4"> 0.0 </span>
+                </div>
+                <div class="card-footer bg-dark text-white"> dynamb/s </div>
+              </div>
+              <div class="card">
+                <div class="card-body">
+                  <span id="spatemRate" class="card-text display-4"> 0.0 </span>
+                </div>
+                <div class="card-footer bg-dark text-white"> spatem/s </div>
+              </div>
             </div>
           </div>
-          <table class="table table-hover my-5">
-            <caption>
-              Current transmitters passing event filters
-              <span class="small animate-breathing"> (max 8 displayed) </span>
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">
-                  <i class="fas fa-barcode"></i> transmitterId
-                </th>
-                <th scope="col">
-                  <i class="fas fa-exchange-alt"></i> events
-                </th>
-                <th scope="col">
-                  <i class="fas fa-barcode"></i> receiverId
-                </th>
-                <th scope="col">
-                  <i class="fas fa-signal"></i> rssi
-                </th>
-                <th scope="col" class="d-none d-lg-table-cell">
-                  <i class="fas fa-info-circle"></i> rec / dec / pac
-                </th>
-                <th scope="col" class="d-none d-lg-table-cell">
-                  <i class="fas fa-clock"></i> timestamp
-                </th>
-              </tr>
-            </thead>
-            <tbody id="raddecs" class="font-monospace text-end">
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -310,7 +187,7 @@
         pareto-anywhere-apps
       </a>
       &nbsp; | &nbsp;
-      <a href="https://www.reelyactive.com"> &copy; reelyActive 2018-2022 </a>
+      <a href="https://www.reelyactive.com"> &copy; reelyActive 2018-2023 </a>
     </footer>
 
     <!-- Optional JavaScript -->

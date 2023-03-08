@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2021-2022
+ * Copyright reelyActive 2021-2023
  * We believe in an open Internet of Things
  */
 
@@ -14,7 +14,7 @@ const SNIFFYPEDIA_BASE_URI = 'https://sniffypedia.org/';
 const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
-let connection = document.querySelector('#connection');
+let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let firsthalf = document.querySelector('#firsthalf');
 let secondhalf = document.querySelector('#secondhalf');
@@ -32,9 +32,8 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
-  connection.replaceChildren(createElement('b',
-                                           'animate-breathing text-success',
-                                           'DEMO'));
+  let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  connectIcon.replaceChildren(demoIcon);
 }
 
 
@@ -65,12 +64,12 @@ function pollAndDisplay() {
         updateDisplay(devices);
       }
       else {
-        connection.hidden = false;
+        connectIcon.hidden = false;
         demoalert.hidden = false;
         updateDisplay({});
       }
 
-      connection.replaceChildren(statusIcon);
+      connectIcon.replaceChildren(statusIcon);
     });
   }
 }
@@ -143,7 +142,7 @@ function tallyStatid(devices) {
 function appendCard(parent, uri, count, maxCount) {
   let img = '';
   let title = uri.substring(SNIFFYPEDIA_BASE_URI.length);
-  let story = cormorant.stories[uri];
+  let story = cormorant.stories.get(uri);
 
   if(story) {
     img = createElement('img', 'img-fluid rounded-start');
@@ -171,7 +170,8 @@ function appendCard(parent, uri, count, maxCount) {
 // Fetch stories from devices with URIs
 function fetchStories(uris) {
   for(const uri of uris) {
-    cormorant.retrieveStory(uri, function(story) {});
+    cormorant.retrieveStory(uri, { isStoryToBeRefetched: false },
+                            (story, status) => {});
   }
 }
 

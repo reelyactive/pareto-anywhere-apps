@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022
+ * Copyright reelyActive 2022-2023
  * We believe in an open Internet of Things
  */
 
@@ -124,8 +124,9 @@ function handleDynamb(dynamb) {
      dynamb.hasOwnProperty('unicodeCodePoints')) {
     let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
                           dynamb.deviceIdType;
-    cormorant.retrieveAssociations(baseUrl, deviceSignature, true,
-                                   (associations, story) => {
+    cormorant.retrieveAssociations(baseUrl, deviceSignature, 
+                                   { isStoryToBeRetrieved: true },
+                                   (associations, story, status) => {
       handleEvent(dynamb, associations, story);
     });
   }
