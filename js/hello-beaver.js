@@ -54,9 +54,6 @@ function handleDisconnect() {
 
 // Handle error
 function handleError(error) {
-  errorDisplay.hidden = false;
-  errorMessage.textContent = error.message;
-  errorTime.textContent = new Date().toLocaleTimeString();
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
 }
 
