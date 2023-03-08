@@ -7,6 +7,7 @@ Collection of web apps for [context-aware physical spaces](https://www.reelyacti
 
 Visit [reelyactive.github.io/pareto-anywhere-apps](https://reelyactive.github.io/pareto-anywhere-apps/) for a hosted version of these apps, or browse directly to a specific demo as follows:
 - [Hyperlocal Context Explorer](https://reelyactive.github.io/pareto-anywhere-apps/hlc-explorer/?demo=default&updates=periodic)
+- [Ambient Context](https://reelyactive.github.io/pareto-anywhere-apps/ambient-context/?demo=default)
 - [Live Directory](https://reelyactive.github.io/pareto-anywhere-apps/live-directory/?demo=default)
 - [Occupancy Observer](https://reelyactive.github.io/pareto-anywhere-apps/occupancy-observer/?demo=default)
 - [Hello Sniffypedia!](https://reelyactive.github.io/pareto-anywhere-apps/hello-sniffypedia/?demo=default)
