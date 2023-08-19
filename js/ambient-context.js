@@ -29,12 +29,14 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 let continuousDataTable = new ContinuousDataTable('#continuousData',
                                                   beaver.devices);
+let discreteDataTableOptions = { isClockDisplayed: true,
+                                 digitalTwins: cormorant.digitalTwins,
+                                 maxRows: 10 };
 let discreteDataTable = new DiscreteDataTable('#discreteData',
-                                              { isClockDisplayed: true,
-                                                maxRows: 10 });
+                                              discreteDataTableOptions);
 
 // Handle beaver events
-beaver.on('dynamb', (dynamb) => { discreteDataTable.handleDynamb(dynamb); });
+beaver.on('dynamb', handleDynamb);
 beaver.on('connect', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
 });
@@ -60,6 +62,20 @@ if(isDemo) {
 // Normal mode: connect to socket.io
 else {
   beaver.stream(baseUrl, { io: io });
+}
+
+
+// Handle a dynamb event
+function handleDynamb(dynamb) {
+  let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
+  cormorant.retrieveDigitalTwin(deviceSignature, null,
+                                { associationsServerUrl: baseUrl },
+                                (digitalTwin, isRetrievedFromMemory) => {
+    if(digitalTwin && !isRetrievedFromMemory) {
+      discreteDataTable.updateDigitalTwin(deviceSignature, digitalTwin);
+    }
+  });
+  discreteDataTable.handleDynamb(dynamb);
 }
 
 
