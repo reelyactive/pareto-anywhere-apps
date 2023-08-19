@@ -13,6 +13,7 @@ let cormorant = (function() {
   // Internal variables
   let associations = new Map();
   let stories = new Map();
+  let digitalTwins = new Map();
 
   // Extract the JSON-LD, if present, from the given HTML
   function extractFromHtml(html) {
@@ -67,7 +68,7 @@ let cormorant = (function() {
     retrieve(url, 'application/json', (data) => {
       let deviceAssociations = null;
       let isStoryBeingRetrieved = false;
-      let isJsonData = (typeof data === 'object');
+      let isJsonData = (data !== null) && (typeof data === 'object');
 
       if(isJsonData) {
         let returnedDeviceId = null;
@@ -116,12 +117,97 @@ let cormorant = (function() {
     });
   }
 
+  // Get the digital twin for the given device
+  function retrieveDigitalTwin(deviceSignature, device, options, callback) {
+    options = options || {};
+
+    if(digitalTwins.has(deviceSignature))  {
+      // TODO: update digital twin timestamp, refresh if necessary?
+      return callback(digitalTwins.get(deviceSignature), true);
+    }
+
+    if(!associations.has(deviceSignature) && options.associationsServerUrl) {
+      retrieveAssociations(options.associationsServerUrl, deviceSignature,
+                           { isStoryToBeRetrieved: true },
+                           (deviceAssociations, story) => {
+        updateDigitalTwin(deviceSignature, story);
+        return callback(digitalTwins.get(deviceSignature), false);
+      });
+    }
+    else if(device) {
+      if(device.url) {
+        retrieveStory(device.url, {}, (story) => {
+          updateDigitalTwin(deviceSignature, story);
+          // TODO: device.statid.uri
+          return callback(digitalTwins.get(deviceSignature), false);
+        });
+      }
+      else if(device.statid && device.statid.uri) {
+        retrieveStory(device.statid.uri, {}, (story) => {
+          updateDigitalTwin(deviceSignature, story);
+          return callback(digitalTwins.get(deviceSignature), false);
+        });
+      }
+    }
+
+    return callback(null);
+  }
+
+  // Update the digital twin of the given device using the given story
+  function updateDigitalTwin(deviceSignature, story) {
+    if(!story) { return; }
+
+    let storyCovers = [];
+
+    if(story.hasOwnProperty('@graph') && Array.isArray(story['@graph'])) {
+      story['@graph'].forEach(storyElement => {
+        let storyCover = determineStoryCover(storyElement);
+        if(storyCover) { storyCovers.push(storyCover); }
+      });
+      digitalTwins.set(deviceSignature, { story: story,
+                                          storyCovers: storyCovers });
+    }
+    else {
+      // TODO: transform to graph (flattened) representation
+    }
+  }
+
+  // Determine the title and image for the storyCover
+  function determineStoryCover(element) {
+    let title;
+    let imageUrl;
+
+    if(element.hasOwnProperty("schema:name")) {
+      title = element["schema:name"];
+    }
+    else if(element.hasOwnProperty("schema:givenName") ||
+            element.hasOwnProperty("schema:familyName")) {
+      title = (element["schema:givenName"] || '') + ' ' +
+             (element["schema:familyName"] || '');
+    }
+
+    if(element.hasOwnProperty("schema:image")) {
+      imageUrl = element["schema:image"];
+    }
+    else if(element.hasOwnProperty("schema:logo")) {
+      imageUrl = element["schema:logo"];
+    }
+
+    if(title || imageUrl) {
+      return { title: title || '', imageUrl: imageUrl }
+    }
+
+    return null;
+  }
+
   // Expose the following functions and variables
   return {
     retrieveAssociations: retrieveAssociations,
     retrieveStory: retrieveStory,
+    retrieveDigitalTwin, retrieveDigitalTwin,
     associations: associations,
-    stories: stories
+    stories: stories,
+    digitalTwins: digitalTwins
   }
 
 }());
