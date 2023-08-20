@@ -1,202 +1,127 @@
 /**
- * Copyright reelyActive 2021-2022
+ * Copyright reelyActive 2021-2023
  * We believe in an open Internet of Things
  */
 
 
 // Constants
-const STATUS_OK = 200;
-const SIGNATURE_SEPARATOR = '/';
-const DIRECTORY_SEPARATOR = ':';
-const POLLING_INTERVAL_MILLISECONDS = 5000;
-const CONTEXT_ROUTE = '/context';
-const SNIFFYPEDIA_BASE_URI = 'https://sniffypedia.org/';
-const ACCEPTED_STORY_TYPES = [ 'schema:Person' ];
-const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
 const DEMO_SEARCH_PARAMETER = 'demo';
+const ACCEPTED_STORY_TYPES = [ 'schema:Person' ];
+
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
-let storycolumn = document.querySelector('#storycolumn');
-let chartable = document.querySelector('#chartable');
+let activestorycolumn = document.querySelector('#activestorycolumn');
 let time = document.querySelector('#time');
+let deviceCount = document.querySelector('#deviceCount');
+let raddecRate = document.querySelector('#raddecRate');
+let dynambRate = document.querySelector('#dynambRate');
+
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
-let selectedUrl = baseUrl + CONTEXT_ROUTE;
-let isPollPending = false;
-let pollingInterval;
+let cards = new Map();
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
-// Demo mode: update connection status
+let discreteDataTableOptions = { isClockDisplayed: true,
+                                 digitalTwins: cormorant.digitalTwins,
+                                 propertiesToDisplay: [ 'unicodeCodePoints' ],
+                                 maxRows: 10 };
+let discreteDataTable = new DiscreteDataTable('#discreteData',
+                                              discreteDataTableOptions);
+
+// Handle beaver events
+beaver.on('dynamb', handleDynamb);
+beaver.on('connect', () => {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+});
+beaver.on('stats', (stats) => {
+  deviceCount.textContent = stats.numberOfDevices;
+  raddecRate.textContent = stats.eventsPerSecond.raddec.toFixed(1);
+  dynambRate.textContent = stats.eventsPerSecond.dynamb.toFixed(1);
+});
+beaver.on('error', (error) => {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+});
+beaver.on('disconnect', () => {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+});
+
+// Demo mode: connect to starling.js
 if(isDemo) {
   let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
   connectIcon.replaceChildren(demoIcon);
+  beaver.stream(baseUrl, { io: starling });
 }
 
-
-setInterval(pollAndDisplay, POLLING_INTERVAL_MILLISECONDS);
-pollAndDisplay();
-
-
-// GET the devices and display in DOM
-function pollAndDisplay() {
-  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
-
-  if(!isPollPending) {
-    isPollPending = true;
-
-    if(isDemo) {
-      let response = starling.getContext();
-      devices = response.devices || {};
-      isPollPending = false;
-      updateDisplay(devices);
-      return;
-    }
-
-    getContext(selectedUrl, function(status, response) {
-      let statusIcon = createElement('i', 'fas fa-cloud text-danger');
-      isPollPending = false;
-
-      if(status === STATUS_OK) {
-        let devices = JSON.parse(response).devices || {};
-        statusIcon = createElement('i', 'fas fa-cloud text-success');
-        demoalert.hidden = true;
-        updateDisplay(devices);
-      }
-      else {
-        connectIcon.hidden = false;
-        demoalert.hidden = false;
-        updateDisplay({});
-      }
-
-      connectIcon.replaceChildren(statusIcon);
-    });
-  }
+// Normal mode: connect to socket.io
+else {
+  beaver.stream(baseUrl, { io: io });
 }
 
+updateDisplay();
 
-// GET the context
-function getContext(url, callback) {
-  let httpRequest = new XMLHttpRequest();
 
-  httpRequest.onreadystatechange = function() {
-    if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      return callback(httpRequest.status, httpRequest.responseText);
+// Handle a dynamb event
+function handleDynamb(dynamb) {
+  let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
+  cormorant.retrieveDigitalTwin(deviceSignature, null,
+                                { associationsServerUrl: baseUrl },
+                                (digitalTwin, isRetrievedFromMemory) => {
+    if(digitalTwin && !isRetrievedFromMemory) {
+      discreteDataTable.updateDigitalTwin(deviceSignature, digitalTwin);
     }
-  };
-  httpRequest.open('GET', url);
-  httpRequest.setRequestHeader('Accept', 'application/json');
-  httpRequest.send();
+  });
+  discreteDataTable.handleDynamb(dynamb);
 }
 
 
 // Update the display based on the latest devices
-function updateDisplay(devices) {
-  let updatedStoryCards = prepareStoryCards(devices);
-  let updatedCharTableRows = new DocumentFragment();
-  let charTallies = tallyUnicodeCodePoints(devices);
-
-  if(charTallies.size > 0) {
-    let maxCount = charTallies.entries().next().value[1];
-
-    charTallies.forEach((count, unicodeCodePoint) => {
-      appendCharTableRow(updatedCharTableRows, unicodeCodePoint, count,
-                         maxCount);
-    });
-  }
-
-  storycolumn.replaceChildren(updatedStoryCards);
-  chartable.replaceChildren(updatedCharTableRows);
-}
-
-
-// Prepare the story cards based on the given devices
-function prepareStoryCards(devices) {
-  let storyCards = new DocumentFragment();
-
-  for(const deviceSignature in devices) {
-    let device = devices[deviceSignature];
-    let uri;
-
-    if(device.hasOwnProperty('url')) {
-      uri = device.url;
-    }
-    else if(device.hasOwnProperty('statid') &&
-            device.statid.hasOwnProperty('url') &&
-            !device.statid.uri.startsWith(SNIFFYPEDIA_BASE_URL)) {
-      uri = device.statid.uri;
+function updateDisplay() {
+  beaver.devices.forEach((device, deviceSignature) => {
+    let lastSeenTimestamp = Date.now();
+    if(device.hasOwnProperty('raddec')) {
+      lastSeenTimestamp = device.raddec.timestamp;
     }
 
-    if(uri) {
-      let isStoryFetched = cormorant.stories.has(uri);
-
-      if(isStoryFetched) {
-        let story = cormorant.stories.get(uri);
-        if(isAcceptedStoryType(story, ACCEPTED_STORY_TYPES)) {
-          let card = cuttlefishStory.render(story);
-          let col = createElement('div', 'col', card);
-          card.setAttribute('class', 'card hover-shadow');
-          storyCards.appendChild(col);
+    if(cards.has(deviceSignature)) {
+      let card = cards.get(deviceSignature);
+      card.lastSeenTimestamp = lastSeenTimestamp;
+    }
+    else {
+      cormorant.retrieveDigitalTwin(deviceSignature, device,
+                                    { associationsServerUrl: baseUrl },
+                                    (digitalTwin, isRetrievedFromMemory) => {
+        if(digitalTwin &&
+           isAcceptedStoryType(digitalTwin.story, ACCEPTED_STORY_TYPES)) {
+          cards.set(deviceSignature, { story: digitalTwin.story,
+                                       lastSeenTimestamp: lastSeenTimestamp });
+          activestorycolumn.appendChild(prepareStoryCard(digitalTwin.story));
         }
-      }
-      else {
-        cormorant.retrieveStory(uri, { isStoryToBeRefetched: false },
-                                (story, status) => {
-          if(isAcceptedStoryType(story, ACCEPTED_STORY_TYPES)) {
-            let card = cuttlefishStory.render(story);
-            let col = createElement('div', 'col', card);
-            card.setAttribute('class', 'card hover-shadow');
-            storycolumn.appendChild(col);
-          }
-        }); 
-      }
+      });
     }
-  }
+  });
 
-  return storyCards;
+  cards.forEach((card) => {
+    // TODO: triage active & recent cards between columns
+  });
+
+  setTimeout(updateDisplay, 5000);
 }
 
 
-// Tally all the Unicode code points of the given devices and sort by count
-function tallyUnicodeCodePoints(devices) {
-  let tallies = new Map();
+// Prepare a story card
+function prepareStoryCard(story) {
+  let card = cuttlefishStory.render(story);
+  let col = createElement('div', 'col', card);
+  card.setAttribute('class', 'card hover-shadow');
 
-  for(const deviceSignature in devices) {
-    let device = devices[deviceSignature];
-    let hasUnicodeCodePoints = device.hasOwnProperty('dynamb') &&
-                               Array.isArray(device.dynamb.unicodeCodePoints);
-
-    if(hasUnicodeCodePoints) {
-      for(const unicodeCodePoint of device.dynamb.unicodeCodePoints) {
-        let count = tallies.get(unicodeCodePoint) || 0;
-        tallies.set(unicodeCodePoint, count + 1);
-      }
-    }
-  }
-
-  return new Map([...tallies.entries()].sort((a, b) => b[1] - a[1]));
-}
-
-
-// Create and append a table row character count
-function appendCharTableRow(parent, unicodeCodePoint, count, maxCount) {
-  let th = createElement('th', 'w-25 table-light display-2 mb-1',
-                               String.fromCodePoint(unicodeCodePoint));
-  let progressBar = createElement('div', 'progress-bar', count);
-  let progress = createElement('div', 'progress', progressBar);
-  let td = createElement('td', 'w-75 align-middle', progress);
-  let tr = createElement('tr', '', [ th, td ]);
-  let widthPercentage = Math.floor(100 * count / maxCount);
-
-  progressBar.setAttribute('style', 'width: ' + widthPercentage + '%');
-
-  parent.appendChild(tr);
+  return card;
 }
 
 
