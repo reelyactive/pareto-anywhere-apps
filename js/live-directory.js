@@ -7,12 +7,14 @@
 // Constants
 const DEMO_SEARCH_PARAMETER = 'demo';
 const ACCEPTED_STORY_TYPES = [ 'schema:Person' ];
+const ACTIVE_TIMEOUT_MILLISECONDS = 60000;
 
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let activestorycolumn = document.querySelector('#activestorycolumn');
+let recentstorycolumn = document.querySelector('#recentstorycolumn');
 let time = document.querySelector('#time');
 let deviceCount = document.querySelector('#deviceCount');
 let raddecRate = document.querySelector('#raddecRate');
@@ -99,29 +101,61 @@ function updateDisplay() {
                                     (digitalTwin, isRetrievedFromMemory) => {
         if(digitalTwin &&
            isAcceptedStoryType(digitalTwin.story, ACCEPTED_STORY_TYPES)) {
-          cards.set(deviceSignature, { story: digitalTwin.story,
-                                       lastSeenTimestamp: lastSeenTimestamp });
-          activestorycolumn.appendChild(prepareStoryCard(digitalTwin.story));
+          let card = prepareCard(digitalTwin.story, deviceSignature);
+          card.lastSeenTimestamp = lastSeenTimestamp;
+          card.isActiveStory = true;
+          cards.set(deviceSignature, card);
+          activestorycolumn.appendChild(card.node);
         }
       });
     }
   });
 
   cards.forEach((card) => {
-    // TODO: triage active & recent cards between columns
+    let activeThresholdTime = Date.now() - ACTIVE_TIMEOUT_MILLISECONDS;
+    let isActive = (card.lastSeenTimestamp >= activeThresholdTime);
+
+    if(isActive && !card.isActiveStory) {
+      prependChild(activestorycolumn, card.node);
+      card.isActiveStory = true;
+      card.footer.hidden = true;
+    }
+    else if(!isActive && card.isActiveStory) {
+      let lastSeenTime = new Date(card.lastSeenTimestamp).toLocaleTimeString([],
+                         { hour: "2-digit", minute: "2-digit", hour12: false });
+      prependChild(recentstorycolumn, card.node);
+      card.lastSeen.textContent = lastSeenTime;
+      card.isActiveStory = false;
+      card.footer.hidden = false;
+    }
+
+    // TODO: limit number of displayed cards?
   });
 
   setTimeout(updateDisplay, 5000);
 }
 
 
-// Prepare a story card
-function prepareStoryCard(story) {
+// Prepare a card
+function prepareCard(story, deviceSignature) {
   let card = cuttlefishStory.render(story);
+  let disappearanceIcon = createElement('i', 'fas fa-sign-out-alt');
+  let lastSeen = createElement('span', null);
+  let footer = createElement('div',
+                             'card-footer text-center text-muted bg-transparent',
+                             [ disappearanceIcon, '\u00a0', lastSeen ]);
   let col = createElement('div', 'col', card);
+  card.appendChild(footer);
   card.setAttribute('class', 'card hover-shadow');
+  footer.setAttribute('id', deviceSignature + '-footer');
+  footer.hidden = true;
 
-  return card;
+  return {
+      story: story,
+      node: card,
+      footer: footer,
+      lastSeen: lastSeen
+  };
 }
 
 
@@ -137,6 +171,17 @@ function isAcceptedStoryType(story, acceptedTypes) {
   }
 
   return false;
+}
+
+
+// Prepend as the first child
+function prependChild(parent, child) {
+  if(parent.firstChild) {
+    parent.insertBefore(child, parent.firstChild);
+  }
+  else {
+    parent.appendChild();
+  }
 }
 
 
