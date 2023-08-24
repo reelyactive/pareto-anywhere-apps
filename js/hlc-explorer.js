@@ -4,14 +4,13 @@
  */
 
 
-// Constants
-const STATUS_OK = 200;
-const STATUS_CREATED = 201;
-const STATUS_BAD_REQUEST = 400;
-const STATUS_NOT_FOUND = 404;
+// Constant definitions
+const DEMO_SEARCH_PARAMETER = 'demo';
+const HLC_MIN_HEIGHT_PX = 480;
+const HLC_UNUSABLE_HEIGHT_PX = 120;
+const POLL_MILLISECONDS = 10000;
+const TIME_OPTIONS = { hour12: false };
 const SIGNATURE_SEPARATOR = '/';
-const DIRECTORY_SEPARATOR = ':';
-const POLLING_INTERVAL_MILLISECONDS = 10000;
 const CONTEXT_ROUTE = '/context';
 const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';
@@ -22,60 +21,23 @@ const TAGS_ROUTE = '/tags';
 const POSITION_ROUTE = '/position';
 const STORIES_ROUTE = '/stories';
 const IMAGES_ROUTE = '/store/images';
-const MESSAGE_BAD_REQUEST = 'Error: Bad Request [400].';
-const MESSAGE_NOT_FOUND = 'Error: Not Found [404].';
 const UPDATES_SEARCH_PARAMETER = 'updates';
-const DEMO_SEARCH_PARAMETER = 'demo';
-const TIME_OPTIONS = { hour12: false };
-const MAX_RSSI = -30;
-const HLC_MIN_HEIGHT_PX = 480;
-const HLC_UNUSABLE_HEIGHT_PX = 120;
-const COSE_LAYOUT_OPTIONS = {
-    name: "cose",
-    animate: false,
-    randomize: false,
-    idealEdgeLength: function(edge) { return Math.max(1, MAX_RSSI -
-                                                         edge.data('rssi')); },
-    edgeElasticity: function(edge) { return 32 * Math.max(1, MAX_RSSI -
-                                                          edge.data('rssi')); },
-    initialTemp: 40
-};
-const GRAPH_STYLE = [
-    { selector: "node",
-      style: { label: "data(name)", "font-size": "0.6em",
-               "min-zoomed-font-size": "16px" } },
-    { selector: "node[image]",
-      style: { "background-image": "data(image)", "border-color": "#83b7d0",
-               "background-fit": "cover cover", "border-width": "2px" } },
-    { selector: "edge", style: { "curve-style": "haystack",
-                                 "line-color": "#ddd", label: "data(name)",
-                                 "text-rotation": "autorotate",
-                                 color: "#5a5a5a", "font-size": "0.25em",
-                                 "min-zoomed-font-size": "12px" } },
-    { selector: ".cyDeviceNode",
-      style: { "background-color": "#83b7d0", "border-color": "#83b7d0" } },
-    { selector: ".cyAnchorNode",
-      style: { "background-color": "#0770a2", "border-color": "#0770a2" } },
-    { selector: ".cySelectedNode",
-      style: { "background-color": "#ff6900", "border-color": "#ff6900" } }
-];
+
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let reinitialise = document.querySelector('#reinitialise');
-let noUpdates = document.querySelector('#settingsNoUpdates');
-let realTimeUpdates = document.querySelector('#settingsRealTimeUpdates');
-let periodicUpdates = document.querySelector('#settingsPeriodicUpdates');
+let enablePollingSwitch = document.querySelector('#enablePollingSwitch');
+let enablePollingMessage = document.querySelector('#enablePollingMessage');
+let intervalValue = document.querySelector('#intervalValue');
+let intervalRange = document.querySelector('#intervalRange');
 let searchRoute = document.querySelector('#searchRoute');
 let time = document.querySelector('#time');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
 let storyDisplay = document.querySelector('#storyDisplay');
-let focusId = document.querySelector('#focusId');
-let focusTagsList = document.querySelector('#focusTagsList');
-let focusDirectoriesList = document.querySelector('#focusDirectoriesList');
 let dynambDisplay = document.querySelector('#dynambDisplay');
 let inputImage = document.querySelector('#inputImage');
 let createStory = document.querySelector('#createStory');
@@ -88,6 +50,7 @@ let updateTags = document.querySelector('#updateTags');
 let updateDirectory = document.querySelector('#updateDirectory');
 let updatePosition = document.querySelector('#updatePosition');
 let associationError = document.querySelector('#associationError');
+let target = document.getElementById('cy');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
@@ -98,16 +61,15 @@ let pollingInterval;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
 let storyImageData;
-let devices = {};
-let isFocusId;
-let socket;
-let cy;
-let layout;
+let streams = {};
+
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let hasUpdatesSearch = searchParams.has(UPDATES_SEARCH_PARAMETER);
 let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+
+setContainerHeight();
 
 // Demo mode: update connection status
 if(isDemo) {
@@ -115,64 +77,62 @@ if(isDemo) {
   connectIcon.replaceChildren(demoIcon);
 }
 
+// Initialise charlotte and handle node taps
+charlotte.init(target, { digitalTwins: cormorant.digitalTwins });
+charlotte.on('tap', handleNodeTap);
+
+// Handle beaver events
+beaver.on('connect', () => {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+});
+beaver.on('poll', () => {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  displayDevices(beaver.devices);
+  isPollPending = false;
+});
+beaver.on('dynamb', displayDynamb);
+beaver.on('error', () => {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+  demoalert.hidden = false;
+});
+
 
 // Monitor buttons
 reinitialise.onclick = init;
 createStory.onclick = createAndAssociateStory;
 
-// Monitor each settings radio button
-noUpdates.onchange = updateUpdates;
-realTimeUpdates.onchange = updateUpdates;
-periodicUpdates.onchange = updateUpdates;
-
-// Monitor button clicks to change focus
-focusId.onclick = updateQuery;
-
-// Monitor offcanvas hide/close
-offcanvas.addEventListener('hidden.bs.offcanvas', handleOffcanvasHide);
+// Monitor updates controls
+enablePollingSwitch.onchange = updateUpdates;
+intervalRange.onchange = updateUpdates;
 
 
 // Initialisation: poll the context once and display the result
 init(true);
 
 
-// Initialise to full context, no polling
+// Initialise to full context, polling
 function init(isInitialPageLoad) {
-  if(socket) { socket.disconnect(); }
+  if(streams.socket) { streams.socket.disconnect(); }
 
   if((isInitialPageLoad === true) && hasUpdatesSearch) {
     let selectedUpdates = searchParams.get(UPDATES_SEARCH_PARAMETER);
 
-    if(selectedUpdates === 'periodic') {
-      noUpdates.checked = false;
-      realTimeUpdates.checked = false;
-      periodicUpdates.checked = true;
-    }
-    else if(selectedUpdates === 'realtime') {
-      noUpdates.checked = false;
-      realTimeUpdates.checked = true;
-      periodicUpdates.checked = false;
+    if(selectedUpdates === 'none') {
+      enablePollingSwitch.checked = false;
+      pollAndDisplay(); // Just once
     }
   }
   else {
-    noUpdates.checked = true;
-    realTimeUpdates.checked = false;
-    periodicUpdates.checked = false;
-    realTimeUpdates.disabled = true;
+    enablePollingSwitch.checked = true;
   }
 
   selectedRoute = CONTEXT_ROUTE;
   searchRoute.textContent = selectedRoute;
   selectedDeviceSignature = null;
-  isFocusId = false;
   isPollPending = false;
   bsOffcanvas.hide();
 
   updateUpdates();
-
-  if(noUpdates.checked) {
-    pollAndDisplay();
-  }
 }
 
 
@@ -183,275 +143,95 @@ function pollAndDisplay() {
 
     if(isDemo) {
       let response = starling.getContext(selectedRoute);
-      devices = response.devices || {};
+      devices = new Map(Object.entries(response.devices || {}));
       isPollPending = false;
       connectIcon.hidden = false;
 
       setContainerHeight();
-      renderHyperlocalContext();
-      fetchStories();
-
-      return;
+      displayDevices(devices);
     }
-
-    getContext(baseUrl + selectedRoute, function(status, response) {
-      let statusIcon = createElement('i', 'fas fa-cloud text-danger');
-      isPollPending = false;
-
-      if(status === STATUS_OK) {
-        devices = JSON.parse(response).devices || {};
-        statusIcon = createElement('i', 'fas fa-cloud text-success');
-        demoalert.hidden = true;
-        setContainerHeight();
-        renderHyperlocalContext();
-        fetchStories();
+    else {
+      let pollOptions = {};
+      if(selectedDeviceSignature) {
+        pollOptions.deviceSignature = selectedDeviceSignature;
+        pollOptions.clearDevices = true;
       }
-      else {
-        connectIcon.hidden = false;
-        demoalert.hidden = false;
-      }
-
-      connectIcon.replaceChildren(statusIcon);
-    });
+      beaver.poll(baseUrl, pollOptions);
+      connectIcon.hidden = false;
+    }
   }
 }
 
 
-// GET the context
-function getContext(url, callback) {
-  let httpRequest = new XMLHttpRequest();
-
-  httpRequest.onreadystatechange = function() {
-    if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      return callback(httpRequest.status, httpRequest.responseText);
-    }
-  };
-  httpRequest.open('GET', url);
-  httpRequest.setRequestHeader('Accept', 'application/json');
-  httpRequest.send();
+// Display the given devices from a poll or event
+function displayDevices(devices) {
+  devices.forEach((device, deviceSignature) => {
+    cormorant.retrieveDigitalTwin(deviceSignature, device, null,
+                                  (digitalTwin, isRetrievedFromMemory) => {
+      if(digitalTwin && !isRetrievedFromMemory) {
+        charlotte.updateDigitalTwin(deviceSignature, digitalTwin);
+      }
+    });
+  });
+  charlotte.spin(devices, target, {});
+  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 }
 
-
-// Create and manage a socket.io connection
-function createSocket() {
-  socket = io(baseUrl + selectedRoute);
-
-  socket.on('connect', function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
-  });
-
-  socket.on('devices', function(updatedDevices) {
-    devices = updatedDevices;
-    renderHyperlocalContext();
-  });
-
-  socket.on('dynamb', function(dynamb) {
-    let signature = dynamb.deviceId + SIGNATURE_SEPARATOR + dynamb.deviceIdType;
-    if(signature === selectedDeviceSignature) {
-      let dynambContent = cuttlefishDynamb.render(dynamb);
-      dynambDisplay.replaceChildren(dynambContent);
-    }
-  });
-
-  socket.on('connect_error', function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
-  });
-
-  socket.on('disconnect', function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
-  });
+// Display the given dynamb, if the device is selected
+function displayDynamb(dynamb) {
+  let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
+  if(deviceSignature === selectedDeviceSignature) {
+    let dynambContent = cuttlefishDynamb.render(dynamb);
+    dynambDisplay.replaceChildren(dynambContent);
+  }
 }
 
 
 // Update the API query/method based on user selection
-function updateQuery(event) {
-  if(socket) { socket.disconnect(); }
+function updateQuery() {
+  if(streams.socket) { streams.socket.disconnect(); }
 
-  switch(event.currentTarget.id) {
-    case 'focusId':
-      selectedRoute = CONTEXT_ROUTE + DEVICE_ROUTE + '/' +
-                      selectedDeviceSignature;
-      isFocusId = true;
-      if(realTimeUpdates.checked) { createSocket(); }
-      break;
-    case 'focusTag':
-      let tag = event.currentTarget.textContent;
-      selectedRoute = CONTEXT_ROUTE + TAG_ROUTE + '/' + tag;
-      isFocusId = false;
-      break;
-    case 'focusDirectory':
-      let directory = event.currentTarget.textContent;
-      selectedRoute = CONTEXT_ROUTE + DIRECTORY_ROUTE + '/' + directory;
-      isFocusId = false;
-      break;
-  }
-
+  selectedRoute = 'context/device/' + selectedDeviceSignature;
   searchRoute.textContent = selectedRoute;
-  realTimeUpdates.disabled = false;
   pollAndDisplay();
+  if(!isDemo) {
+    streams = beaver.stream(baseUrl, { deviceSignature: selectedDeviceSignature,
+                                       io: io });
+  }
 }
 
 
 // Update the update method
-function updateUpdates(event) {
-  if(noUpdates.checked) {
-    connectIcon.hidden = true;
-    if(socket) { socket.disconnect(); }
-    clearInterval(pollingInterval);
-  }
+function updateUpdates() {
+  clearInterval(pollingInterval);
 
-  if(realTimeUpdates.checked) { 
-    connectIcon.hidden = false;
-    clearInterval(pollingInterval);
-    createSocket();
-  }
-
-  if(periodicUpdates.checked) {
-    connectIcon.hidden = true;
-    if(socket) { socket.disconnect(); }
+  if(enablePollingSwitch.checked) {
+    enablePollingMessage.textContent = 'Enabled';
+    intervalValue.textContent = intervalRange.value;
     pollAndDisplay();
-    pollingInterval = setInterval(pollAndDisplay,
-                                  POLLING_INTERVAL_MILLISECONDS);
+    pollingInterval = setInterval(pollAndDisplay, intervalRange.value * 1000);
+    connectIcon.hidden = false;
+  }
+  else {
+    enablePollingMessage.textContent = 'Disabled';
+    if(streams.socket) { streams.socket.disconnect(); }
+    connectIcon.hidden = true;
   }
 
+  intervalRangeDisplay.hidden = !enablePollingSwitch.checked;
   updateSearchString();
 }
 
 
-// Fetch stories from devices with URIs
-function fetchStories() {
-  for(const deviceSignature in devices) {
-    let device = devices[deviceSignature];
-    let url = device.url;
-
-    if(!url && device.hasOwnProperty('statid')) {
-      url = device.statid.uri;
-    }
-
-    if(url) {
-      cormorant.retrieveStory(url, { isStoryToBeRefetched: false },
-                              (story, status) => {
-        let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
-        if(story && isExistingNode) {
-          let node = cy.getElementById(deviceSignature);
-          let name = cuttlefishStory.determineTitle(story);
-          let imageUrl = cuttlefishStory.determineImageUrl(story);
-
-          node.data('name', name);
-          if(imageUrl) { node.data('image', imageUrl); }
-        }
-      });
-    }
-  }
-}
-
-
-// Retrieve the device story if already fetched by cormorant
-function retrieveDeviceStory(device) {
-  if(device.url && cormorant.stories.has(device.url)) {
-    return cormorant.stories.get(device.url);
-  }
-
-  if(device.hasOwnProperty('statid') && device.statid.uri &&
-     cormorant.stories.has(device.statid.uri)) {
-    return cormorant.stories.get(device.statid.uri);
-  }
-
-  return null;
-}
-
-
-// Add a device node to the hyperlocal context graph
-function addDeviceNode(deviceSignature, device) {
-  let name = determineDeviceName(device);
-  let imageUrl;
-  let story = retrieveDeviceStory(device);
-
-  if(story) {
-    name = cuttlefishStory.determineTitle(story) || name;
-    imageUrl = cuttlefishStory.determineImageUrl(story);
-  }
-
-  let isAnchor = device.hasOwnProperty('position') &&
-                 Array.isArray(device.position) &&
-                 (device.position.length >= 2) &&
-                 (typeof device.position[0] === 'number') &&
-                 (typeof device.position[1] === 'number');
-  let nodeClass = isAnchor ? 'cyAnchorNode' : 'cyDeviceNode';
-  let isExistingNode = (cy.getElementById(deviceSignature).size() > 0);
-
-  if(!isExistingNode && !isAnchor) {
-    cy.add({ group: "nodes", data: { id: deviceSignature } });
-  }
-  else if(!isExistingNode) {
-    cy.add({ group: "nodes", data: { id: deviceSignature,
-                                     position: { x: device.position[0],
-                                                 y: device.position[1] } } });
-  }
-
-  let node = cy.getElementById(deviceSignature);
-  node.data('name', name);
-  node.addClass(nodeClass);
-  if(imageUrl) { node.data('image', imageUrl); }
-
-  if(device.hasOwnProperty('nearest')) {
-    device.nearest.forEach(function(entry) {
-      let peerSignature = entry.device;
-      let edgeSignature = deviceSignature + '@' + peerSignature;
-      let isExistingEdge = (cy.getElementById(edgeSignature).size() > 0);
-      isExistingNode = (cy.getElementById(peerSignature).size() > 0);
-
-      if(!isExistingNode) {
-        cy.add({ group: "nodes", data: { id: peerSignature } });
-      }
-      if(!isExistingEdge) {
-        cy.add({ group: "edges", data: { id: edgeSignature,
-                                         source: deviceSignature,
-                                         target: peerSignature,
-                                         name: entry.rssi + "dBm",
-                                         rssi: entry.rssi } });
-      }
-    });
-  }
-}
-
-
-// Determine the name of the device, if any
-function determineDeviceName(device) {
-  if(device.hasOwnProperty('directory')) {
-    return device.directory;
-  }
-
-  if(device.hasOwnProperty('statid') && device.statid.hasOwnProperty('name')) {
-    return device.statid.name;
-  }
-
-  if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
-    return device.tags[0];
-  }
-
-  if(Array.isArray(device.position)) {
-    let position = '';
-
-    device.position.forEach((coordinate) => {
-      position += coordinate.toFixed(6) + ', ';
-    });
-    
-    return position.substring(0, position.length - 2);
-  }
-
-  return '';
-}
-
-
 // Update the offcanvas body based on the selected device
-function updateOffcanvasBody(device) {
+function updateOffcanvasBody(deviceSignature) {
+  let device = beaver.devices.get(deviceSignature) || {};
   let dropdownItems = new DocumentFragment();
   let dynambContent = new DocumentFragment();
   let statidContent = new DocumentFragment();
-  let story = retrieveDeviceStory(device);
 
-  if(story) {
+  if(cormorant.digitalTwins.has(deviceSignature)) {
+    let story = cormorant.digitalTwins.get(deviceSignature).story;
     cuttlefishStory.render(story, storyDisplay);
   }
   else {
@@ -462,52 +242,6 @@ function updateOffcanvasBody(device) {
   inputTags.value = device.tags || '';
   inputDirectory.value = device.directory || '';
   inputPosition.value = device.position || '';
-
-  if(device.hasOwnProperty('tags') && Array.isArray(device.tags)) {
-    device.tags.forEach(function(tag) {
-      let li = createElement('li');
-      let dropdownItem = createElement('a', 'dropdown-item', tag);
-      dropdownItem.setAttribute('id', 'focusTag');
-      dropdownItem.onclick = updateQuery;
-      li.appendChild(dropdownItem);
-      dropdownItems.appendChild(li);
-    });
-
-    focusTags.removeAttribute('disabled', '');
-  }
-  else {
-    focusTags.setAttribute('disabled', '');
-  }
-
-  focusTagsList.replaceChildren(dropdownItems);
-
-  dropdownItems = new DocumentFragment();
-
-  if(device.hasOwnProperty('directory')) {
-    let directoryElements = device.directory.split(DIRECTORY_SEPARATOR);
-
-    directoryElements.forEach(function(element, index) {
-      let li = createElement('li');
-      let directoryName = directoryElements[0];
-
-      for(let cElement = 1; cElement < (directoryElements.length - index);
-          cElement++) {
-        directoryName += DIRECTORY_SEPARATOR + directoryElements[cElement];
-      }
-      let dropdownItem = createElement('a', 'dropdown-item', directoryName);
-      dropdownItem.setAttribute('id', 'focusDirectory');
-      dropdownItem.onclick = updateQuery;
-      li.appendChild(dropdownItem);
-      dropdownItems.appendChild(li);
-    });
-
-    focusDirectories.removeAttribute('disabled', '');
-  }
-  else {
-    focusDirectories.setAttribute('disabled', '');
-  }
-
-  focusDirectoriesList.replaceChildren(dropdownItems);
 
   if(device.hasOwnProperty('dynamb')) {
     dynambContent = cuttlefishDynamb.render(device.dynamb);
@@ -522,68 +256,12 @@ function updateOffcanvasBody(device) {
 
 
 // Handle a user tap on a specific node
-function handleNodeTap(event) {
-  let device = event.target;
-
-  if(selectedDeviceSignature &&
-     (cy.getElementById(selectedDeviceSignature).size() > 0)) {
-    cy.getElementById(selectedDeviceSignature).removeClass('cySelectedNode');
-  }
-
-  selectedDeviceSignature = device.id();
-  cy.getElementById(selectedDeviceSignature).addClass('cySelectedNode');
+function handleNodeTap(deviceSignature) {
+  selectedDeviceSignature = deviceSignature;
   offcanvasTitle.textContent = selectedDeviceSignature;
-  updateOffcanvasBody(devices[selectedDeviceSignature]);
+  updateOffcanvasBody(selectedDeviceSignature);
   bsOffcanvas.show();
-}
-
-
-// Handle an offcanvas hide
-function handleOffcanvasHide() {
-  if(!isFocusId) {
-    if(selectedDeviceSignature &&
-       (cy.getElementById(selectedDeviceSignature).size() > 0)) {
-      cy.getElementById(selectedDeviceSignature).removeClass('cySelectedNode');
-    }
-
-    selectedDeviceSignature = null;
-  }
-}
-
-
-// Render the hyperlocal context graph
-function renderHyperlocalContext() {
-  let options = {
-      container: document.getElementById('cy'),
-      layout: COSE_LAYOUT_OPTIONS,
-      style: GRAPH_STYLE
-  };
-  let layoutName = 'cose';
-
-  cy = cytoscape(options);
-  layout = cy.layout({ name: layoutName, cy: cy });
-
-  cy.on('tap', 'node', handleNodeTap);
-
-  for(const deviceSignature in devices) {
-    let device = devices[deviceSignature];
-
-    addDeviceNode(deviceSignature, device);
-
-    if(deviceSignature === selectedDeviceSignature) {
-      updateOffcanvasBody(device);
-    }
-  }
-
-  if(selectedDeviceSignature &&
-     (cy.getElementById(selectedDeviceSignature).size() > 0)) {
-    cy.getElementById(selectedDeviceSignature).addClass('cySelectedNode');
-  }
-
-  layout.stop();
-  layout = cy.elements().makeLayout(options.layout);
-  layout.run();
-  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
+  updateQuery();
 }
 
 
@@ -594,11 +272,11 @@ function updateSearchString() {
   if(isDemo) {
     searchString.append(DEMO_SEARCH_PARAMETER, 'default');
   }
-  if(realTimeUpdates.checked) { 
-    searchString.append(UPDATES_SEARCH_PARAMETER, 'realtime');
-  }
-  else if(periodicUpdates.checked) {
+  if(enablePollingSwitch.checked) {
     searchString.append(UPDATES_SEARCH_PARAMETER, 'periodic');
+  }
+  else {
+    searchString.append(UPDATES_SEARCH_PARAMETER, 'none');
   }
 
   let isEmptySearchString = (Array.from(searchString).length === 0);
@@ -627,7 +305,7 @@ function postStory(story, callback) {
 
   httpRequest.onreadystatechange = function() {
     if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      if(httpRequest.status === STATUS_CREATED) {
+      if(httpRequest.status === 201) {
         let response = JSON.parse(httpRequest.responseText);
         let storyId = Object.keys(response.stories)[0];
         let storyUrl = baseUrl + STORIES_ROUTE + '/' + storyId;
@@ -652,7 +330,7 @@ function postImage(callback) {
   formData.append('image', inputImage.files[0]);
 
   httpRequest.onload = function(event) {
-    if(httpRequest.status === STATUS_CREATED) {
+    if(httpRequest.status === 201) {
       let response = JSON.parse(httpRequest.responseText);
       let imageId = Object.keys(response.images)[0];
       let url = baseUrl + IMAGES_ROUTE + '/' + imageId;
@@ -723,8 +401,8 @@ function putAssociationProperty(route, json, callback) {
   associationError.hidden = true;
   httpRequest.onreadystatechange = function() {
     if(httpRequest.readyState === XMLHttpRequest.DONE) {
-      if((httpRequest.status === STATUS_OK) ||
-         (httpRequest.status === STATUS_CREATED)) {
+      if((httpRequest.status === 200) ||
+         (httpRequest.status === 201)) {
         return callback(httpRequest.status,
                         JSON.parse(httpRequest.responseText));
       }
@@ -742,7 +420,7 @@ function putAssociationProperty(route, json, callback) {
 
 // Handle the update of an association property
 function handlePropertyUpdate(status, response) {
-  if(status === STATUS_OK) {
+  if(status === 200) {
     deviceIdSignature = Object.keys(response.associations)[0];
     let deviceAssociations = response.associations[deviceIdSignature];
     inputUrl.value = deviceAssociations.url || '';
@@ -750,12 +428,12 @@ function handlePropertyUpdate(status, response) {
     inputDirectory.value =  deviceAssociations.directory || '';
     inputPosition.value = deviceAssociations.position || '';
   }
-  else if(status === STATUS_BAD_REQUEST) {
-    associationErrorMessage.textContent = MESSAGE_BAD_REQUEST;
+  else if(status === 400) {
+    associationErrorMessage.textContent = 'Error: Bad Request [400].';
     associationError.hidden = false;
   }
-  else if(status === STATUS_NOT_FOUND) {
-    associationErrorMessage.textContent = MESSAGE_NOT_FOUND;
+  else if(status === 404) {
+    associationErrorMessage.textContent = 'Error: Not Found [404].';
     associationError.hidden = false;
   }
 }
@@ -824,6 +502,3 @@ function createElement(elementName, classNames, content) {
 
   return element;
 }
-
-
-renderHyperlocalContext();

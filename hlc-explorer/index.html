@@ -55,31 +55,21 @@
                 <li>
                   <form class="dropdown-item p-2">
                     <legend> Updates </legend>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" checked
-                             name="settingsUpdates" id="settingsNoUpdates">
-                      <label class="form-check-label" for="settingsNoUpdates">
-                        Disabled
-                      </label>
+                    <div class="form-check form-switch mb-3">
+                      <input class="form-check-input" type="checkbox"
+                             role="switch" id="enablePollingSwitch" checked>
+                      <label class="form-check-label" for="enablePollingSwitch"
+                             id="enablePollingMessage"> Enabled </label>
                     </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" disabled
-                             name="settingsUpdates"
-                             id="settingsRealTimeUpdates">
-                      <label class="form-check-label"
-                             for="settingsRealTimeUpdates">
-                        Real-time
-                        <small class="text-muted"> (socket.io) </small>
-                      </label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio"
-                             name="settingsUpdates"
-                             id="settingsPeriodicUpdates">
-                      <label class="form-check-label"
-                             for="settingsPeriodicUpdates">
-                        Periodic <small class="text-muted"> (polling) </small>
-                      </label>
+                    <div id="intervalRangeDisplay">
+                      <div>
+                        <input type="range" class="form-range" min="2" max="60"
+                               step="1" value="10" id="intervalRange">
+                      </div>
+                      <div class="text-center text-primary mb-1">
+                        <i class="fas fa-history"></i>
+                        <span id="intervalValue">10</span>s
+                      </div>
                     </div>
                   </form>
                 </li>
@@ -215,38 +205,6 @@
         </div>
         <div class="offcanvas-body" id="offcanvasBody">
           <div id="storyDisplay"></div>
-          <!-- Search card -->
-          <div class="card text-center my-4">
-            <h5 class="card-header"> <i class="fas fa-search"></i> </h5>
-            <div class="card-body">
-              <div class="btn-group" role="group" aria-label="Refine focus">
-                <button type="button" id="focusId"
-                        class="btn btn-ambient text-white">
-                  &nbsp;<i class="fas fa-barcode"></i>&nbsp;
-                </button>
-                <div class="btn-group" role="group">
-                  <button id="focusTags" type="button"
-                          class="btn btn-dark dropdown-toggle"
-                          data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-tags"></i>
-                  </button>
-                  <ul class="dropdown-menu" aria-labelledby="focusTags"
-                      id="focusTagsList">
-                  </ul>
-                </div>
-                <div class="btn-group" role="group">
-                  <button id="focusDirectories" type="button"
-                          class="btn btn-success text-white dropdown-toggle"
-                          data-bs-toggle="dropdown" aria-expanded="false">
-                     <i class="fas fa-sitemap"></i>
-                  </button>
-                  <ul class="dropdown-menu" aria-labelledby="focusDirectories"
-                      id="focusDirectoriesList">
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
           <div id="dynambDisplay" class="my-4"></div>
           <div id="statidDisplay" class="my-4"></div>
           <div id="editDisplay" class="my-4">
@@ -365,10 +323,15 @@
 
     <!-- Optional JavaScript -->
     <script defer src="../js/fontawesome-reelyactive.min.js"></script>
-    <script src="../js/cytoscape.min.js"></script>
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
+    <script src="../js/cytoscape.min.js"></script>
+    <script src="../js/layout-base.js"></script>
+    <script src="../js/cose-base.js"></script>
+    <script src="../js/cytoscape-fcose.js"></script>
     <script src="../js/socket.io.min.js"></script>
+    <script src="../js/charlotte.js"></script>
     <script src="../js/cormorant.js"></script>
+    <script src="../js/beaver.js"></script>
     <script src="../js/cuttlefish-story.js"></script>
     <script src="../js/cuttlefish-dynamb.js"></script>
     <script src="../js/cuttlefish-statid.js"></script>

@@ -16,7 +16,7 @@ let beaver = (function() {
   // Internal variables
   let devices = new Map();
   let eventCallbacks = { connect: [], raddec: [], dynamb: [], spatem: [],
-                         stats: [], error: [], disconnect: [] };
+                         poll: [], stats: [], error: [], disconnect: [] };
   let eventCounts = { raddec: 0, dynamb: 0, spatem: 0 };
   let staleDeviceMilliseconds = DEFAULT_STALE_DEVICE_MILLISECONDS;
   let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
@@ -295,6 +295,32 @@ let beaver = (function() {
     return streams;
   };
 
+  // Poll from the given server
+  let poll = function(serverRootUrl, options) {
+    options = options || {};
+    let queryUrl = serverRootUrl + '/context/';
+
+    if(options.deviceSignature) {
+      queryUrl += 'device/' + options.deviceSignature;
+    }
+    if(options.clearDevices) {
+      devices.clear();
+    }
+
+    retrieveJson(queryUrl, (data) => {
+      handleContext(data);
+      eventCallbacks['poll'].forEach(callback => callback());
+
+      if(Number.isInteger(options.intervalMilliseconds)) {
+        setTimeout(poll, options.intervalMilliseconds, serverRootUrl, options);
+      }
+    });
+
+    if(!updateTimeout) {
+      update(); // Start periodic updates
+    }
+  };
+
   // Register a callback for the given event
   let setEventCallback = function(event, callback) {
     let isValidEvent = event && eventCallbacks.hasOwnProperty(event);
@@ -308,6 +334,7 @@ let beaver = (function() {
   // Expose the following functions and variables
   return {
     stream: stream,
+    poll: poll,
     on: setEventCallback,
     devices: devices
   }
