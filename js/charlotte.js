@@ -287,6 +287,8 @@ let charlotte = (function() {
 
   // Handle a user tap on a specific node
   function handleNodeTap(event) {
+    if(!event.target.id) { return; }
+
     let tappedDeviceSignature = event.target.id();
 
     selectNode(tappedDeviceSignature);
