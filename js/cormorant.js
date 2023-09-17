@@ -121,7 +121,7 @@ let cormorant = (function() {
   function retrieveDigitalTwin(deviceSignature, device, options, callback) {
     options = options || {};
 
-    if(digitalTwins.has(deviceSignature))  {
+    if(digitalTwins.has(deviceSignature)) {
       // TODO: update digital twin timestamp, refresh if necessary?
       return callback(digitalTwins.get(deviceSignature), true);
     }
@@ -149,8 +149,9 @@ let cormorant = (function() {
         });
       }
     }
-
-    return callback(null);
+    else {
+      return callback(null);
+    }
   }
 
   // Update the digital twin of the given device using the given story
