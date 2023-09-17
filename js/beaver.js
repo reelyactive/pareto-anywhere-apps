@@ -16,7 +16,8 @@ let beaver = (function() {
   // Internal variables
   let devices = new Map();
   let eventCallbacks = { connect: [], raddec: [], dynamb: [], spatem: [],
-                         poll: [], stats: [], error: [], disconnect: [] };
+                         poll: [], appearance: [], disappearance: [], stats: [],
+                         error: [], disconnect: [] };
   let eventCounts = { raddec: 0, dynamb: 0, spatem: 0 };
   let staleDeviceMilliseconds = DEFAULT_STALE_DEVICE_MILLISECONDS;
   let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
@@ -76,6 +77,8 @@ let beaver = (function() {
     else {
       device = { raddec: raddec, nearest: createNearest(raddec) };
       devices.set(signature, device);
+      eventCallbacks['appearance'].forEach(callback => callback(signature,
+                                                                device));
     }
 
     eventCallbacks['raddec'].forEach(callback => callback(raddec));
@@ -101,6 +104,8 @@ let beaver = (function() {
         device.nearest = createNearest(device.raddec, device.dynamb);
       }
       devices.set(signature, device);
+      eventCallbacks['appearance'].forEach(callback => callback(signature,
+                                                                device));
     }
 
     eventCallbacks['dynamb'].forEach(callback => callback(dynamb));
@@ -122,6 +127,8 @@ let beaver = (function() {
     else {
       device = { spatem: createTrimmedSpatem(spatem) };
       devices.set(signature, device);
+      eventCallbacks['appearance'].forEach(callback => callback(signature,
+                                                                device));
     }
 
     eventCallbacks['spatem'].forEach(callback => callback(spatem));
@@ -132,7 +139,14 @@ let beaver = (function() {
   function handleContext(data) {
     if(data) {
       for(const signature in data.devices) {
-        devices.set(signature, data.devices[signature]); // TODO: merge?
+        if(!devices.has(signature)) {
+          devices.set(signature, data.devices[signature]);
+          eventCallbacks['appearance'].forEach(
+                      callback => callback(signature, data.devices[signature]));
+        }
+        else {
+          devices.set(signature, data.devices[signature]); // TODO: merge?
+        }
       }
     }
   }
@@ -165,6 +179,8 @@ let beaver = (function() {
     staleCollection.forEach((signature) => {
       if(!nearestCollection.includes(signature)) {
         devices.delete(signature);
+        eventCallbacks['disappearance'].forEach(
+                                               callback => callback(signature));
       }
     });
   }
