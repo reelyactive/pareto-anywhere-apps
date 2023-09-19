@@ -8,6 +8,7 @@
 const DEMO_SEARCH_PARAMETER = 'demo';
 const ACCEPTED_STORY_TYPES = [ 'schema:Person' ];
 const ACTIVE_TIMEOUT_MILLISECONDS = 60000;
+const SIGNATURE_SEPARATOR = '/';
 
 
 // DOM elements
@@ -25,6 +26,7 @@ let dynambRate = document.querySelector('#dynambRate');
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let cards = new Map();
+let cormorantOptions;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -57,13 +59,21 @@ beaver.on('disconnect', () => {
 // Demo mode: connect to starling.js
 if(isDemo) {
   let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  let context = starling.getContext();
+
   connectIcon.replaceChildren(demoIcon);
-  beaver.stream(baseUrl, { io: starling });
+  beaver.stream(null, { io: starling, ioUrl: "http://pareto.local" });
+
+  for(let deviceSignature in context.devices) {
+    let device = context.devices[deviceSignature];
+    beaver.devices.set(deviceSignature, device);
+  }
 }
 
 // Normal mode: connect to socket.io
 else {
   beaver.stream(baseUrl, { io: io });
+  cormorantOptions = { associationsServerUrl: baseUrl }; 
 }
 
 updateDisplay();
@@ -72,8 +82,7 @@ updateDisplay();
 // Handle a dynamb event
 function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
-  cormorant.retrieveDigitalTwin(deviceSignature, null,
-                                { associationsServerUrl: baseUrl },
+  cormorant.retrieveDigitalTwin(deviceSignature, null, cormorantOptions,
                                 (digitalTwin, isRetrievedFromMemory) => {
     if(digitalTwin && !isRetrievedFromMemory) {
       discreteDataTable.updateDigitalTwin(deviceSignature, digitalTwin);
@@ -96,8 +105,7 @@ function updateDisplay() {
       card.lastSeenTimestamp = lastSeenTimestamp;
     }
     else {
-      cormorant.retrieveDigitalTwin(deviceSignature, device,
-                                    { associationsServerUrl: baseUrl },
+      cormorant.retrieveDigitalTwin(deviceSignature, device, cormorantOptions,
                                     (digitalTwin, isRetrievedFromMemory) => {
         if(digitalTwin &&
            isAcceptedStoryType(digitalTwin.story, ACCEPTED_STORY_TYPES)) {
