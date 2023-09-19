@@ -31,10 +31,12 @@ beaver.on('dynamb', handleDynamb);
 beaver.on('connect', () => {
   if(isDemo) { return; }
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  demoalert.hidden = true;
 });
 beaver.on('stats', (stats) => {});
 beaver.on('error', (error) => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+  demoalert.hidden = false;
 });
 beaver.on('disconnect', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
