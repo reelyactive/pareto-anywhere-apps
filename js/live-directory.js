@@ -83,13 +83,15 @@ updateDisplay();
 // Handle a dynamb event
 function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
-  cormorant.retrieveDigitalTwin(deviceSignature, null, cormorantOptions,
-                                (digitalTwin, isRetrievedFromMemory) => {
-    if(digitalTwin && !isRetrievedFromMemory) {
-      discreteDataTable.updateDigitalTwin(deviceSignature, digitalTwin);
-    }
-  });
-  discreteDataTable.handleDynamb(dynamb);
+  if(cards.has(deviceSignature)) {
+    cormorant.retrieveDigitalTwin(deviceSignature, null, cormorantOptions,
+                                  (digitalTwin, isRetrievedFromMemory) => {
+      if(digitalTwin && !isRetrievedFromMemory) {
+        discreteDataTable.updateDigitalTwin(deviceSignature, digitalTwin);
+      }
+    });
+    discreteDataTable.handleDynamb(dynamb);
+  }
 }
 
 
