@@ -8,7 +8,6 @@
 const DEMO_SEARCH_PARAMETER = 'demo';
 const ACCEPTED_STORY_TYPES = [ 'schema:Person' ];
 const ACTIVE_TIMEOUT_MILLISECONDS = 60000;
-const SIGNATURE_SEPARATOR = '/';
 
 
 // DOM elements

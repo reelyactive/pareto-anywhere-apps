@@ -10,7 +10,6 @@ const HLC_MIN_HEIGHT_PX = 480;
 const HLC_UNUSABLE_HEIGHT_PX = 120;
 const POLL_MILLISECONDS = 10000;
 const TIME_OPTIONS = { hour12: false };
-const SIGNATURE_SEPARATOR = '/';
 const CONTEXT_ROUTE = '/context';
 const DEVICE_ROUTE = '/device';
 const DIRECTORY_ROUTE = '/directory';

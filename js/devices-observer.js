@@ -7,7 +7,6 @@
 // Constant definitions
 const DEMO_SEARCH_PARAMETER = 'demo';
 const TIME_OPTIONS = { hour12: false };
-const SIGNATURE_SEPARATOR = '/';
 const TWIN_COLS = 'col-md-4 col-xl-3';
 const RTLS_COLS = 'col-md-4 col-xl-5';
 const DATA_COLS = 'col-md-4 col-xl-4';
