@@ -159,7 +159,7 @@ let starling = (function() {
       receivers.forEach((receiver) => {
         if((Math.random() * device.nearest.length) < 0.7) {
           device.nearest.push({
-            device: receiver.id + SIGNATURE_SEPARATOR + receiver.idType,
+            device: receiver.id + '/' + receiver.idType,
             rssi: -90 + Math.round(Math.random() * 40)
           });
         }
@@ -175,7 +175,7 @@ let starling = (function() {
     });
 
     receivers.forEach((receiver) => {
-      let signature = receiver.id + SIGNATURE_SEPARATOR + receiver.idType;
+      let signature = receiver.id + '/' + receiver.idType;
       let device = {};
 
       if(receiver.url) { device.url = receiver.url; }
