@@ -152,7 +152,7 @@ let starling = (function() {
     let devices = {};
 
     transmitters.forEach((transmitter) => {
-      let signature = transmitter.id + SIGNATURE_SEPARATOR + transmitter.idType;
+      let signature = transmitter.id + '/' + transmitter.idType;
       let device = { nearest: [] };
       let dynamb = createDynamb(transmitter);
 
