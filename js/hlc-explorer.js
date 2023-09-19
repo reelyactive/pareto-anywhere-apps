@@ -83,6 +83,7 @@ charlotte.on('tap', handleNodeTap);
 // Handle beaver events
 beaver.on('connect', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  demoalert.hidden = true;
 });
 beaver.on('poll', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
