@@ -32,7 +32,7 @@ beaver.on('disconnect', handleDisconnect);
 if(isDemo) {
   let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
   connectIcon.replaceChildren(demoIcon);
-  beaver.stream(baseUrl, { io: starling });
+  beaver.stream(null, { io: starling, ioUrl: "http://pareto.local" });
 }
 
 // Normal mode: connect to socket.io
@@ -43,6 +43,7 @@ else {
 // Handle stream connection
 function handleConnect() {
   statsDisplay.hidden = false;
+  demoalert.hidden = true;
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
 }
 
@@ -55,6 +56,7 @@ function handleDisconnect() {
 // Handle error
 function handleError(error) {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+  demoalert.hidden = false;
 }
 
 // Handle stats
