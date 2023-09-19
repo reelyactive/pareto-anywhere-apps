@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022
+ * Copyright reelyActive 2022-2023
  * We believe in an open Internet of Things
  */
 
@@ -11,7 +11,8 @@ let starling = (function() {
       { id: "fee150bada55", idType: 3, dynambProperties: [],
         statid: { uri: "https://sniffypedia.org/Product/Any_BLE-Device/",
         name: "Harald" } },
-      { id: "d070b11d070b", idType: 3, dynambProperties: [],
+      { id: "d070b11d070b", idType: 3,
+        dynambProperties: [ 'unicodeCodePoints' ],
         statid: { deviceIds: [ "496f4944434f4445b73e5554462d3332/0001/f989" ] },
         url: "https://www.reelyactive.com/team/barnowl/" },
       { id: "0be118ad0660", idType: 3, dynambProperties: [],
@@ -58,6 +59,7 @@ let starling = (function() {
         url: "https://www.reelyactive.com/parc/stories/reelyactive/",
         directory: "parc:reelyactive", position: [ -73.57120, 45.50886 ] }
   ];
+  let DEFAULT_UNICODE_CODE_POINTS = [ 0x1f989, 0x1f44c, 0x1f44d, 0x1f198 ];
   let DEFAULT_UPDATE_CYCLE_MILLISECONDS = 4000;
 
   // Internal variables
@@ -136,6 +138,10 @@ let starling = (function() {
         return [ randomBoolean ];
       case 'temperature':
         return Math.round(Math.random() * 20) + 15;
+      case 'unicodeCodePoints':
+        let unicodeCodePoint = DEFAULT_UNICODE_CODE_POINTS[Math.floor(
+                           Math.random() * DEFAULT_UNICODE_CODE_POINTS.length)];
+        return [ unicodeCodePoint ];
       case 'relativeHumidity':
         return Math.round(Math.random() * 100);
     }
