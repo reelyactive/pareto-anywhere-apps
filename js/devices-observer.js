@@ -29,6 +29,7 @@ beaver.on('disappearance', handleDisappearance);
 beaver.on('raddec', handleRaddec);
 beaver.on('dynamb', handleDynamb);
 beaver.on('connect', () => {
+  if(isDemo) { return; }
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
 });
 beaver.on('stats', (stats) => {});
@@ -46,8 +47,16 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 // Demo mode: connect to starling.js
 if(isDemo) {
   let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+  let context = starling.getContext();
+
   connectIcon.replaceChildren(demoIcon);
-  beaver.stream(baseUrl, { io: starling });
+  beaver.stream(null, { io: starling, ioUrl: "http://pareto.local" });
+
+  for(let deviceSignature in context.devices) {
+    let device = context.devices[deviceSignature];
+    beaver.devices.set(deviceSignature, device);
+    handleAppearance(deviceSignature, device);
+  }
 }
 
 // Normal mode: connect to socket.io
