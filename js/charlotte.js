@@ -16,9 +16,10 @@ let charlotte = (function() {
       animate: true,
       animationDuration: 1600,
       randomize: true,
-      idealEdgeLength: (edge) => {
-        return Math.max(1, MAX_EXPECTED_RSSI - edge.data('rssi'));
-      },
+      nodeRepulsion: (node) => { return 9000; },
+      edgeElasticity: (edge) => {
+          return 0.45 * MAX_EXPECTED_RSSI /
+                        Math.min(MAX_EXPECTED_RSSI, edge.data('rssi')); },
       padding: 24,
       fixedNodeConstraint: []
   };
