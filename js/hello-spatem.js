@@ -15,10 +15,10 @@ let message = document.querySelector('#message');
 let deviceCount =  document.querySelector('#deviceCount');
 let spatemRate = document.querySelector('#spatemRate');
 let spatemDisplay = document.querySelector('#spatemdisplay');
-let time = document.querySelector('#time');
 
 // Other variables
-let selectedDeviceId;
+let selectedDeviceSignature;
+let cormorantOptions;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -26,8 +26,14 @@ let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 let baseUrl = window.location.protocol + '//' + window.location.hostname + ':' +
               window.location.port;
 
-// Start the clock
-updateClock();
+// Instantiate the devices table
+let devicesTableOptions = {
+  beaver: beaver,
+  digitalTwins: cormorant.digitalTwins,
+  isFilteredDevice: isFilteredDevice,
+  isClockDisplayed: true
+};
+let devicesTable = new DevicesTable('#devicestable', devicesTableOptions);
 
 // Handle beaver events
 beaver.on('connect', handleConnect);
@@ -35,6 +41,9 @@ beaver.on('spatem', handleSpatem);
 beaver.on('stats', handleStats);
 beaver.on('error', handleError);
 beaver.on('disconnect', handleDisconnect);
+
+// Handle devicesTable events
+devicesTable.on('selection', handleSelection);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
@@ -46,6 +55,7 @@ if(isDemo) {
 // Normal mode: connect to socket.io
 else {
   beaver.stream(baseUrl, { io: io });
+  cormorantOptions = { associationsServerUrl: baseUrl };
 }
 
 // Handle stream connection
@@ -73,15 +83,42 @@ function handleStats(stats) {
 
 // Handle a spatem event
 function handleSpatem(spatem) {
-  message.hidden = true;
-  cuttlefishSpatem.render(spatem, spatemdisplay);
+  let deviceSignature = spatem.deviceId + '/' + spatem.deviceIdType;
+  let device = beaver.devices.get(deviceSignature);
+
+  cormorant.retrieveDigitalTwin(deviceSignature, null, cormorantOptions,
+                                (digitalTwin, isRetrievedFromMemory) => {
+    if(digitalTwin && !isRetrievedFromMemory) {
+      devicesTable.updateDigitalTwin(deviceSignature, digitalTwin);
+    }
+  });
+
+  if(device) {
+    devicesTable.insertDevice(deviceSignature, device);
+  }
+  if(!selectedDeviceSignature ||
+     (deviceSignature === selectedDeviceSignature)) {
+    cuttlefishSpatem.render(spatem, spatemdisplay);
+    message.hidden = true;
+  }
 }
 
-// Update clock, repeat at the top of the minute
-function updateClock() {
-  let millisecondsToNextMinute = 60000 - (Date.now() % 60000);
-  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
-  setTimeout(updateClock, millisecondsToNextMinute);
+// Handle a device selection event
+function handleSelection(deviceSignature) {
+  selectedDeviceSignature = deviceSignature;
+  let spatem;
+
+  if(beaver.devices.has(selectedDeviceSignature)) {
+    let selectedDevice = beaver.devices.get(selectedDeviceSignature);
+    spatem = selectedDevice.spatem;
+  }
+
+  cuttlefishSpatem.render(spatem || {}, spatemdisplay);
+}
+
+// Determine if the given device is passing the filter
+function isFilteredDevice(device) {
+  return device.hasOwnProperty('spatem');
 }
 
 // Create an element as specified
