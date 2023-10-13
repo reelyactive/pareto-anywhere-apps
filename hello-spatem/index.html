@@ -60,7 +60,7 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://getbootstrap.com" >
+                     href="https://getbootstrap.com">
                     <i class="fab fa-bootstrap"></i>
                     Bootstrap 5 &nbsp;
                     <span class="badge bg-light text-dark">
@@ -70,7 +70,7 @@
                 </li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://fontawesome.com" >
+                     href="https://fontawesome.com">
                     <i class="fab fa-font-awesome"></i>
                     Font Awesome (Free) &nbsp;
                     <span class="badge bg-light text-dark">
@@ -81,7 +81,7 @@
                 </li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://github.com/reelyactive/web-style-guide/" >
+                     href="https://github.com/reelyactive/web-style-guide/">
                     <i class="fas fa-code"></i>
                     Web Style Guide &nbsp;
                     <span class="badge bg-light text-dark">
@@ -92,7 +92,17 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://github.com/reelyactive/cuttlefish/" >
+                     href="https://github.com/reelyactive/beaver/">
+                    <i class="fab fa-js"></i>
+                    beaver.js &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/cuttlefish/">
                     <i class="fab fa-js"></i>
                     cuttlefish.js &nbsp;
                     <span class="badge bg-light text-dark">
@@ -102,7 +112,7 @@
                 </li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://socket.io/" >
+                     href="https://socket.io/">
                     <i class="fab fa-js"></i>
                     socket.io 4 &nbsp;
                     <span class="badge bg-light text-dark">
@@ -113,7 +123,7 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://www.reelyactive.com/made-in-montreal/" >
+                     href="https://www.reelyactive.com/made-in-montreal/">
                     <i class="fab fa-canadian-maple-leaf"></i>
                     Made in Montr&eacute;al &nbsp;
                     <i class="fas fa-city"></i>
@@ -149,6 +159,23 @@
                 </thead>
                 <tbody>
                 </tbody>
+                <!-- Stats -->
+                <tfoot>
+                  <tr class="bg-ambient bg-gradient text-white">
+                    <td colspan="4">
+                      <ul class="list-inline text-center mb-1">
+                        <li class="list-inline-item">
+                          <span id="deviceCount" class="display-5"> 0 </span>
+                          <span class="lead"> devices </span>
+                        </li>
+                        <li class="list-inline-item">
+                          <span id="spatemRate" class="display-6"> 0.0 </span>
+                          spatem<sub>/s</sub>
+                        </li>
+                      </ul>
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
             <div class="col-12 col-xxl-5">
@@ -164,7 +191,7 @@
               <h2 id="message" class="text-muted animate-breathing mt-4">
                 Waiting for <em>spa</em>tial <em>tem</em>poral data...
               </h2>
-              <div id="latestspatem">
+              <div id="spatemdisplay">
               </div>
             </div>
           </div>
@@ -182,8 +209,10 @@
     <!-- Optional JavaScript -->
     <script defer src="../js/fontawesome-reelyactive.min.js"></script>
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
-    <script src="../js/starling.js"></script>
     <script src="../js/socket.io.min.js"></script>
+    <script src="../js/starling.js"></script>
+    <script src="../js/beaver.js"></script>
+    <script src="../js/cuttlefish-spatem.js"></script>
     <script src="../js/hello-spatem.js"></script>
   </body>
 </html>

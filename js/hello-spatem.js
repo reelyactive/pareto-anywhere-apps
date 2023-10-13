@@ -5,76 +5,84 @@
 
 
 // Constants
-const SIGNATURE_SEPARATOR = '/';
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
-const DEFAULT_UPDATE_MILLISECONDS = 5000;
 const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let message = document.querySelector('#message');
-let latestspatem = document.querySelector('#latestspatem');
+let deviceCount =  document.querySelector('#deviceCount');
+let spatemRate = document.querySelector('#spatemRate');
+let spatemDisplay = document.querySelector('#spatemdisplay');
 let time = document.querySelector('#time');
 
 // Other variables
-let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
+let selectedDeviceId;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+let baseUrl = window.location.protocol + '//' + window.location.hostname + ':' +
+              window.location.port;
+
+// Start the clock
+updateClock();
+
+// Handle beaver events
+beaver.on('connect', handleConnect);
+beaver.on('spatem', handleSpatem);
+beaver.on('stats', handleStats);
+beaver.on('error', handleError);
+beaver.on('disconnect', handleDisconnect);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
   let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
   connectIcon.replaceChildren(demoIcon);
-  starling.on("spatem", handleSpatem);
+  beaver.stream(null, { io: starling, ioUrl: "http://pareto.local" });
 }
 
 // Normal mode: connect to socket.io
 else {
-  let baseUrl = window.location.protocol + '//' + window.location.hostname +
-                ':' + window.location.port;
-  let socket = io(baseUrl);
-  socket.on("spatem", handleSpatem);
-
-  // Display changes to the socket.io connection status
-  socket.on("connect", function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
-    demoalert.hidden = true;
-  });
-  socket.on("connect_error", function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
-    demoalert.hidden = false;
-  });
-  socket.on("disconnect", function(reason) {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
-  });
+  beaver.stream(baseUrl, { io: io });
 }
 
+// Handle stream connection
+function handleConnect() {
+  demoalert.hidden = true;
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+}
 
-// Begin periodic updates of display
-update();
-setInterval(update, updateMilliseconds);
+// Handle stream disconnection
+function handleDisconnect() {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+}
 
+// Handle error
+function handleError(error) {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+  demoalert.hidden = false;
+}
+
+// Handle stats
+function handleStats(stats) {
+  deviceCount.textContent = stats.numberOfDevices;
+  spatemRate.textContent = stats.eventsPerSecond.spatem.toFixed(1);
+}
 
 // Handle a spatem event
 function handleSpatem(spatem) {
-  let deviceSignature = spatem.deviceId + SIGNATURE_SEPARATOR +
-                        spatem.deviceIdType;
-
-  let pre = createElement('pre', null, JSON.stringify(spatem, null, 2));
-  latestspatem.replaceChildren(pre);
-
   message.hidden = true;
+  cuttlefishSpatem.render(spatem, spatemdisplay);
 }
 
-
-// Compile statistics, update time and display
-function update() {
+// Update clock, repeat at the top of the minute
+function updateClock() {
+  let millisecondsToNextMinute = 60000 - (Date.now() % 60000);
   time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
+  setTimeout(updateClock, millisecondsToNextMinute);
 }
-
 
 // Create an element as specified
 function createElement(elementName, classNames, content) {
