@@ -92,6 +92,16 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/beaver/">
+                    <i class="fab fa-js"></i>
+                    beaver.js &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
                      href="https://github.com/reelyactive/cuttlefish/" >
                     <i class="fab fa-js"></i>
                     cuttlefish.js &nbsp;
@@ -140,24 +150,31 @@
           </div>
           <div class="row justify-content-between mt-5">
             <div class="col-12 col-xxl-5 mb-5 order-xxl-last">
-              <table class="table table-hover text-center">
-                <caption class="text-ambient"> <sup>*</sup> Number of dynamb in the last 10 seconds. </caption>
-                <thead>
-                  <tr>
-                    <td id="time" class="bg-dark bg-gradient text-white display-1"
-                        colspan="2"> : </td>
+              <table id="devicestable">
+                <!-- Stats -->
+                <tfoot>
+                  <tr class="bg-ambient bg-gradient text-white">
+                    <td colspan="4">
+                      <ul class="list-inline text-center mb-1">
+                        <li class="list-inline-item">
+                          <span id="deviceCount" class="display-5"> 0 </span>
+                          <span class="lead"> devices </span>
+                        </li>
+                        <li class="list-inline-item">
+                          <span id="dynambRate" class="display-6"> 0.0 </span>
+                          dynamb<sub>/s</sub>
+                        </li>
+                      </ul>
+                    </td>
                   </tr>
-                </thead>
-                <tbody id="propertytable">
-                </tbody>
+                </tfoot>
               </table>
             </div>
             <div class="col-12 col-xxl-5">
               <table class="table table-hover text-center">
                 <thead>
                   <tr class="border border-bottom border-0">
-                    <th class="display-1 bg-primary bg-gradient text-white"
-                        colspan="2">
+                    <th class="display-1 bg-primary bg-gradient text-white">
                       <span class="display-4"> Hello dynamb! </span>
                     </th>
                   </tr>
@@ -166,7 +183,7 @@
               <h2 id="message" class="text-muted animate-breathing mt-4">
                 Waiting for <em>dyn</em>amic <em>amb</em>ient data...
               </h2>
-              <div id="latestdynamb">
+              <div id="dynambdisplay">
               </div>
             </div>
           </div>
@@ -184,9 +201,12 @@
     <!-- Optional JavaScript -->
     <script defer src="../js/fontawesome-reelyactive.min.js"></script>
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
-    <script src="../js/cuttlefish-dynamb.js"></script>
-    <script src="../js/starling.js"></script>
     <script src="../js/socket.io.min.js"></script>
+    <script src="../js/starling.js"></script>
+    <script src="../js/beaver.js"></script>
+    <script src="../js/cormorant.js"></script>
+    <script src="../js/cuttlefish-dynamb.js"></script>
+    <script src="../js/cuttlefish-tables.js"></script>
     <script src="../js/hello-dynamb.js"></script>
   </body>
 </html>

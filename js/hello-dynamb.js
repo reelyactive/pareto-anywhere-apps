@@ -5,161 +5,121 @@
 
 
 // Constants
-const DYNAMB_ROUTE = '/devices/dynamb';
-const SIGNATURE_SEPARATOR = '/';
 const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", hour12: false };
-const DEFAULT_UPDATE_MILLISECONDS = 5000;
-const DEFAULT_COMPILATION_MILLISECONDS = 10000;
-const DYNAMB_DISPLAY_HOLDOFF_MILLISECONDS = 1000;
 const DEMO_SEARCH_PARAMETER = 'demo';
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let message = document.querySelector('#message');
-let latestdynamb = document.querySelector('#latestdynamb');
-let propertytable = document.querySelector('#propertytable');
-let time = document.querySelector('#time');
+let deviceCount =  document.querySelector('#deviceCount');
+let dynambRate = document.querySelector('#dynambRate');
+let dynambDisplay = document.querySelector('#dynambdisplay');
 
 // Other variables
-let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
-let dynambCompilation = new Map();
-let latestDisplayedDynambTimestamp = 0;
+let selectedDeviceSignature;
+let cormorantOptions;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+let baseUrl = window.location.protocol + '//' + window.location.hostname + ':' +
+              window.location.port;
+
+// Instantiate the devices table
+let devicesTableOptions = {
+  beaver: beaver,
+  digitalTwins: cormorant.digitalTwins,
+  isFilteredDevice: isFilteredDevice,
+  isClockDisplayed: true
+};
+let devicesTable = new DevicesTable('#devicestable', devicesTableOptions);
+
+// Handle beaver events
+beaver.on('connect', handleConnect);
+beaver.on('dynamb', handleDynamb);
+beaver.on('stats', handleStats);
+beaver.on('error', handleError);
+beaver.on('disconnect', handleDisconnect);
+
+// Handle devicesTable events
+devicesTable.on('selection', handleSelection);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
   let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
   connectIcon.replaceChildren(demoIcon);
-  starling.on("dynamb", handleDynamb);
+  beaver.stream(null, { io: starling, ioUrl: "http://pareto.local" });
 }
 
 // Normal mode: connect to socket.io
 else {
-  let baseUrl = window.location.protocol + '//' + window.location.hostname +
-                ':' + window.location.port;
-  let socket = io(baseUrl + DYNAMB_ROUTE);
-  socket.on("dynamb", handleDynamb);
-
-
-  // Display changes to the socket.io connection status
-  socket.on("connect", function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
-    demoalert.hidden = true;
-  });
-  socket.on("connect_error", function() {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
-    demoalert.hidden = false;
-  });
-  socket.on("disconnect", function(reason) {
-    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
-  });
+  beaver.stream(baseUrl, { io: io });
+  cormorantOptions = { associationsServerUrl: baseUrl };
 }
 
+// Handle stream connection
+function handleConnect() {
+  demoalert.hidden = true;
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+}
 
-// Begin periodic updates of stats display
-update();
-setInterval(update, updateMilliseconds);
+// Handle stream disconnection
+function handleDisconnect() {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
+}
 
+// Handle error
+function handleError(error) {
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
+  demoalert.hidden = false;
+}
+
+// Handle stats
+function handleStats(stats) {
+  deviceCount.textContent = stats.numberOfDevices;
+  dynambRate.textContent = stats.eventsPerSecond.dynamb.toFixed(1);
+}
 
 // Handle a dynamb event
 function handleDynamb(dynamb) {
-  let deviceSignature = dynamb.deviceId + SIGNATURE_SEPARATOR +
-                        dynamb.deviceIdType;
+  let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
+  let device = beaver.devices.get(deviceSignature);
 
-  if(dynamb.timestamp > (latestDisplayedDynambTimestamp +
-                         DYNAMB_DISPLAY_HOLDOFF_MILLISECONDS)) {
-    message.hidden = true;
-    cuttlefishDynamb.render(dynamb, latestdynamb);
-    latestDisplayedDynambTimestamp = dynamb.timestamp;
-  }
-
-  for(const property in dynamb) {
-    if((property !== 'timestamp') && (property !== 'deviceId') &&
-       (property !== 'deviceIdType')) {
-      let propertySample = { value: dynamb[property],
-                             timestamp: dynamb.timestamp,
-                             deviceSignature: deviceSignature };
-
-      if(!dynambCompilation.has(property)) {
-        dynambCompilation.set(property, []);
-      }
-
-      let propertySamples = dynambCompilation.get(property);
-
-      propertySamples.unshift(propertySample);
-    }
-  }
-}
-
-
-// Compile statistics, update time and display
-function update() {
-  time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
-
-  updateCompilation();
-  updateDisplay();
-
-  if(latestDisplayedDynambTimestamp < (Date.now() - updateMilliseconds)) {
-    latestdynamb.replaceChildren();
-    message.hidden = false;
-  }
-}
-
-
-// Remove stale samples from the dynamb compilation
-function updateCompilation() {
-  let staleTimestampThreshold = Date.now() - DEFAULT_COMPILATION_MILLISECONDS;
-
-  dynambCompilation.forEach((samples, property) => {
-    for(let index = samples.length - 1; index >= 0; index--) {
-      let sample = samples[index];
-
-      if(sample.timestamp < staleTimestampThreshold) {
-        samples.splice(index, 1);
-      }
-    }
-
-    if(samples.length === 0) {
-      dynambCompilation.delete(property);
+  cormorant.retrieveDigitalTwin(deviceSignature, null, cormorantOptions,
+                                (digitalTwin, isRetrievedFromMemory) => {
+    if(digitalTwin && !isRetrievedFromMemory) {
+      devicesTable.updateDigitalTwin(deviceSignature, digitalTwin);
     }
   });
+
+  if(device) {
+    devicesTable.insertDevice(deviceSignature, device);
+  }
+  if(!selectedDeviceSignature ||
+     (deviceSignature === selectedDeviceSignature)) {
+    cuttlefishDynamb.render(dynamb, dynambdisplay);
+    message.hidden = true;
+  }
 }
 
+// Handle a device selection event
+function handleSelection(deviceSignature) {
+  selectedDeviceSignature = deviceSignature;
+  let dynamb;
 
-// Update the compilation display
-function updateDisplay() {
-  let rows = new DocumentFragment();
-
-  if(dynambCompilation.size > 0) {
-    let sortedDynambCompilation = new Map([...dynambCompilation.entries()]
-                                    .sort((a, b) => b[1].length - a[1].length));
-    let maxCount = [...sortedDynambCompilation][0][1].length;
-  
-    sortedDynambCompilation.forEach((samples, property) => {
-      let i = cuttlefishDynamb.renderIcon(property);
-      let progressBar = createElement('div', 'progress-bar bg-ambient',
-                                      samples.length);
-      let progress = createElement('div', 'progress mb-2', progressBar);
-      let widthPercentage = Math.floor(100 * samples.length / maxCount);
-      let value = cuttlefishDynamb.renderValue(property, samples[0].value);
-      let th = createElement('th',
-                             'w-25 table-light display-6 align-middle mb-1', i);
-      let td = createElement('td', 'w-75 align-middle', [ progress, value ]);
-      let tr = createElement('tr', null, [ th, td ]);
-
-      progressBar.setAttribute('style', 'width: ' + widthPercentage + '%');
-      rows.appendChild(tr);
-    });
-
+  if(beaver.devices.has(selectedDeviceSignature)) {
+    let selectedDevice = beaver.devices.get(selectedDeviceSignature);
+    dynamb = selectedDevice.dynamb;
   }
 
-  propertytable.replaceChildren(rows);
+  cuttlefishDynamb.render(dynamb || {}, dynambdisplay);
 }
 
+// Determine if the given device is passing the filter
+function isFilteredDevice(device) {
+  return device.hasOwnProperty('dynamb');
+}
 
 // Create an element as specified
 function createElement(elementName, classNames, content) {

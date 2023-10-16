@@ -11,7 +11,11 @@ let cuttlefishDynamb = (function() {
       'Unknown',
       'EUI-64',
       'EUI-48',
-      'RND-48'
+      'RND-48',
+      'TID-96',
+      'EPC-96',
+      'UUID-128',
+      'EURID-32'
   ];
   const AXIS_NAMES = [ 'x', 'y', 'z' ];
   const MS_IN_YEAR = 31536000000;
@@ -33,7 +37,7 @@ let cuttlefishDynamb = (function() {
                            transform: "progressPercentage" },
       batteryVoltage: { icon: "fas fa-battery-half", suffix: " V",
                         transform: "toFixed(2)" },
-      deviceId: { icon: "fas fa-wifi", suffix: "", transform: "text" },
+      deviceId: { icon: "fas fa-wifi", suffix: "", transform: "monospace" },
       distance: { icon: "fas fa-expand-alt", suffix: " m",
                   transform: "toFixed(2)" },
       elevation: { icon: "fas fa-layer-group", suffix: " m",
@@ -49,6 +53,8 @@ let cuttlefishDynamb = (function() {
                          transform: "booleanArray" },
       isContactDetected: { icon: "fas fa-compress-alt", suffix: "",
                            transform: "booleanArray" },
+      isLiquidDetected: { icon: "fas fa-tint", suffix: "",
+                          transform: "booleanArray" },
       isMotionDetected: { icon: "fas fa-walking", suffix: "",
                           transform: "booleanArray" },
       magneticField: { icon: "fas fa-magnet", suffix: " G",
@@ -81,6 +87,7 @@ let cuttlefishDynamb = (function() {
 
   // Render a dynamb
   function render(dynamb, target, options) {
+    options = options || {};
     let tbody = createElement('tbody');
     let table = createElement('table', 'table', tbody);
 
@@ -93,14 +100,17 @@ let cuttlefishDynamb = (function() {
       table.appendChild(caption);
     }
     if(dynamb.hasOwnProperty('deviceId') &&
-       dynamb.hasOwnProperty('deviceIdType')) {
+       dynamb.hasOwnProperty('deviceIdType') && !options.hideDeviceId) {
       let deviceId = dynamb.deviceId + ' / ' +
                      IDENTIFIER_TYPES[dynamb.deviceIdType];
       let tr = renderAsRow('deviceId', deviceId);
+      tr.setAttribute('class', 'table-light');
       tbody.appendChild(tr);
     }
 
-    for(const property in dynamb) {
+    let sorted = Object.keys(dynamb).sort((a, b) => a.localeCompare(b));
+
+    sorted.forEach((property) => {
       if((property !== 'timestamp') && (property !== 'deviceId') &&
          (property !== 'deviceIdType')) {
         let tr = renderAsRow(property, dynamb[property]);
@@ -109,7 +119,7 @@ let cuttlefishDynamb = (function() {
           tbody.appendChild(tr);
         }
       }
-    }
+    });
 
     if(target) {
       target.replaceChildren(table);
@@ -176,6 +186,8 @@ let cuttlefishDynamb = (function() {
     suffix = suffix || '';
 
     switch(transform) {
+      case 'monospace':
+        return createElement('span', 'font-monospace', data + suffix);
       case 'booleanArray':
         return renderBooleanArray(data);
       case 'elapsedTime':
