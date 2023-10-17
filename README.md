@@ -9,10 +9,12 @@ Visit [reelyactive.github.io/pareto-anywhere-apps](https://reelyactive.github.io
 - [Hyperlocal Context Explorer](https://reelyactive.github.io/pareto-anywhere-apps/hlc-explorer/?demo=default&updates=periodic)
 - [Ambient Context](https://reelyactive.github.io/pareto-anywhere-apps/ambient-context/?demo=default)
 - [Live Directory](https://reelyactive.github.io/pareto-anywhere-apps/live-directory/?demo=default)
-- [Occupancy Observer](https://reelyactive.github.io/pareto-anywhere-apps/occupancy-observer/?demo=default)
-- [Hello Sniffypedia!](https://reelyactive.github.io/pareto-anywhere-apps/hello-sniffypedia/?demo=default)
 - [Hello dynamb!](https://reelyactive.github.io/pareto-anywhere-apps/hello-dynamb/?demo=default)
+- [Hello spatem!](https://reelyactive.github.io/pareto-anywhere-apps/hello-spatem/?demo=default)
 - [Hello beaver!](https://reelyactive.github.io/pareto-anywhere-apps/hello-beaver/?demo=default)
+- [Hello Sniffypedia!](https://reelyactive.github.io/pareto-anywhere-apps/hello-sniffypedia/?demo=default)
+- [Devices Observer](https://reelyactive.github.io/pareto-anywhere-apps/devices-observer/?demo=default)
+- [Occupancy Observer](https://reelyactive.github.io/pareto-anywhere-apps/occupancy-observer/?demo=default)
 
 
 Contributing
