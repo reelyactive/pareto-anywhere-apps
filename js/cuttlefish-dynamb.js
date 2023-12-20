@@ -57,6 +57,8 @@ let cuttlefishDynamb = (function() {
                           transform: "booleanArray" },
       isMotionDetected: { icon: "fas fa-walking", suffix: "",
                           transform: "booleanArray" },
+      levelPercentage: { icon: "fas fa-tachometer-alt", suffix: " %",
+                         transform: "progressPercentage" },
       magneticField: { icon: "fas fa-magnet", suffix: " G",
                        transform: "progressXYZ" },
       nearest: { icon: "fas fa-people-arrows", suffix: "dBm",
@@ -65,6 +67,7 @@ let cuttlefishDynamb = (function() {
                            transform: "toFixed(0)" },
       passageCounts: { icon: "fas fa-exchange-alt", suffix: " passages",
                        transform: "passages" },
+      pH: { icon: "fas fa-water", suffix: " pH", transform: "toFixed(2)" },
       position: { icon: "fas fa-map-pin", suffix: "", transform: "position" },
       pressure: { icon: "fas fa-cloud", suffix: " Pa",
                   transform: "toFixed(0)" },
@@ -77,7 +80,7 @@ let cuttlefishDynamb = (function() {
       temperature: { icon: "fas fa-thermometer-half", suffix: " \u2103",
                      transform: "toFixed(2)" },
       temperatures: { icon: "fas fa-thermometer-half", suffix: " \u2103",
-                      transform: "numberArray(2)" },
+                      transform: "toFixedArray(2)" },
       timestamp: { icon: "fas fa-clock", suffix: "", transform: "timeOfDay" },
       txCount: { icon: "fas fa-satellite-dish", transform: "localeString",
                  suffix: " Tx" },
@@ -305,19 +308,20 @@ let cuttlefishDynamb = (function() {
   function renderPassages(passages, suffix) {
     let lis = [];
 
-    if(Number.isInteger(passages.entries)) {
-      let icon = createElement('i', 'fas fa-sign-in-alt');
-      let value = '\u00a0' + passages.entries;
-      lis.push(createElement('li', 'list-inline-item', [ icon, value ]));
+    if(Array.isArray(passages)) {
+      if(passages.length === 2) {
+        let entries = [ createElement('i', 'fas fa-sign-in-alt text-muted'),
+                        '\u00a0' + passages[0] ];
+        let exits = [ createElement('i', 'fas fa-sign-out-alt text-muted'),
+                      '\u00a0' + passages[1] ];
+        lis.push(createElement('li', 'list-inline-item', entries));
+        lis.push(createElement('li', 'list-inline-item', exits));
+      }
+      else if(passages.length === 1) {
+        lis.push(createElement('li', 'list-inline-item', passages[0]));
+      }
     }
-    if(Number.isInteger(passages.exits)) {
-      let icon = createElement('i', 'fas fa-sign-out-alt');
-      let value = '\u00a0' + passages.exits;
-      lis.push(createElement('li', 'list-inline-item', [ icon, value ]));
-    }
-    if((lis.length === 0) && Number.isInteger(passages.total)) {
-      lis.push(createElement('li', 'list-inline-item', passages.total));
-    }
+
     if(lis.length > 0) {
       lis.push(createElement('li', 'list-inline-item', suffix));
     }
