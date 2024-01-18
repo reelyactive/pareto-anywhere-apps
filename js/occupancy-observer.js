@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022-2023
+ * Copyright reelyActive 2022-2024
  * We believe in an open Internet of Things
  */
 
@@ -234,7 +234,7 @@ function updateOccupancyRow(status, deviceSignature) {
       createElement('td', null, status.title || deviceSignature),
       createElement('td', 'animate-breathing',
                     createOccupancyIcon(status.current)),
-      createElement('td', 'table-info',
+      createElement('td', 'bg-body-secondary',
                     createOccupancyIcon(status.previous[0])),
       createElement('td', null, createOccupancyIcon(status.previous[1])),
       createElement('td', null, createOccupancyIcon(status.previous[2]))
@@ -258,7 +258,7 @@ function createOccupancyIcon(isMotionDetected) {
       iconClass = 'fas fa-times-circle text-success';
       break;
     default:
-      iconClass = 'fas fa-question-circle text-light';
+      iconClass = 'fas fa-question-circle text-body-tertiary';
   }
 
   return createElement('i', iconClass);
