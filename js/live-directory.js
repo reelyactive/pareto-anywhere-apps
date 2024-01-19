@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2021-2023
+ * Copyright reelyActive 2021-2024
  * We believe in an open Internet of Things
  */
 
@@ -153,11 +153,11 @@ function prepareCard(story, deviceSignature) {
   let disappearanceIcon = createElement('i', 'fas fa-sign-out-alt');
   let lastSeen = createElement('span', null);
   let footer = createElement('div',
-                             'card-footer text-center text-muted bg-transparent',
-                             [ disappearanceIcon, '\u00a0', lastSeen ]);
+                   'card-footer text-center text-body-secondary bg-transparent',
+                   [ disappearanceIcon, '\u00a0', lastSeen ]);
   let col = createElement('div', 'col', card);
   card.appendChild(footer);
-  card.setAttribute('class', 'card hover-shadow');
+  card.setAttribute('class', 'card hover-shadow px-0');
   footer.setAttribute('id', deviceSignature + '-footer');
   footer.hidden = true;
 
