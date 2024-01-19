@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022-2023
+ * Copyright reelyActive 2022-2024
  * We believe in an open Internet of Things
  */
 
@@ -14,7 +14,7 @@ let starling = (function() {
       { id: "d070b11d070b", idType: 3,
         dynambProperties: [ 'unicodeCodePoints' ],
         statid: { deviceIds: [ "496f4944434f4445b73e5554462d3332/0001/f989" ] },
-        url: "https://www.reelyactive.com/team/barnowl/" },
+        url: "https://stories.reelyactive.com/barnowls/owlistair/" },
       { id: "0be118ad0660", idType: 3, dynambProperties: [],
         statid: { deviceIds: [ "496f49445554462d3332/00000001f415"] },
         url: "https://www.reelyactive.com/team/obelix/" },
@@ -53,11 +53,20 @@ let starling = (function() {
   ];
   let DEFAULT_RECEIVERS = [
       { id: "001bc50940810000", idType: 1,
-        url: "https://www.reelyactive.com/parc/stories/entrance/",
+        url: "https://stories.reelyactive.com/office/reception/",
         directory: "parc:entrance", position: [ -73.57127, 45.50889 ] },
       { id: "0b1e6a7e8a40", idType: 2,
-        url: "https://www.reelyactive.com/parc/stories/reelyactive/",
-        directory: "parc:reelyactive", position: [ -73.57120, 45.50886 ] }
+        url: "https://stories.reelyactive.com/office/conferenceroom/bright/",
+        directory: "parc:reelyactive", position: [ -73.57120, 45.50886 ] },
+      { id: "a700ba81f1a4", idType: 2,
+        url: "https://stories.reelyactive.com/office/kitchen/",
+        directory: "parc:reelyactive", position: [ -73.57127, 45.50884 ] },
+      { id: "001bc50940820000", idType: 1,
+        url: "https://stories.reelyactive.com/office/elevators/",
+        directory: "parc:reelyactive", position: [ -73.57123, 45.50887 ] },
+      { id: "7a54e774413b", idType: 2,
+        url: "https://stories.reelyactive.com/office/supplies/",
+        directory: "parc:reelyactive", position: [ -73.57121, 45.50890 ] }
   ];
   let DEFAULT_UNICODE_CODE_POINTS = [ 0x1f989, 0x1f44c, 0x1f44d, 0x1f198 ];
   let DEFAULT_UPDATE_CYCLE_MILLISECONDS = 4000;
