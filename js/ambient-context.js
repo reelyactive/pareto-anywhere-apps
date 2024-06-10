@@ -1,11 +1,15 @@
 /**
- * Copyright reelyActive 2023
+ * Copyright reelyActive 2023-2024
  * We believe in an open Internet of Things
  */
 
 
 // Constants
 const DEMO_SEARCH_PARAMETER = 'demo';
+const CONTINUOUS_PROPERTIES = [ 'temperature', 'relativeHumidity',
+                                'illuminance', 'batteryPercentage' ];
+const CONTINUOUS_HISTORY_MILLISECONDS = 60000;
+const CONTINUOUS_UPDATE_MILLISECONDS = 5000;
 
 
 // DOM elements
@@ -22,14 +26,16 @@ let dynambRate = document.querySelector('#dynambRate');
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let cormorantOptions;
+let devices = new Map();
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
 
 
-let continuousDataTable = new ContinuousDataTable('#continuousData',
-                                                  beaver.devices);
+let continuousDataTableOptions = { propertiesToDisplay: CONTINUOUS_PROPERTIES };
+let continuousDataTable = new ContinuousDataTable('#continuousData', devices,
+                                                  continuousDataTableOptions);
 let discreteDataTableOptions = { isClockDisplayed: true,
                                  digitalTwins: cormorant.digitalTwins,
                                  maxRows: 10 };
@@ -76,10 +82,14 @@ else {
   cormorantOptions = { associationsServerUrl: baseUrl };
 }
 
+setTimeout(removeStaleDevicesData, CONTINUOUS_UPDATE_MILLISECONDS);
+
 
 // Handle a dynamb event
 function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
+  let hasContinuousDataProperty = false;
+
   cormorant.retrieveDigitalTwin(deviceSignature, null, cormorantOptions,
                                 (digitalTwin, isRetrievedFromMemory) => {
     if(digitalTwin && !isRetrievedFromMemory) {
@@ -87,6 +97,67 @@ function handleDynamb(dynamb) {
     }
   });
   discreteDataTable.handleDynamb(dynamb);
+  updateDevices(deviceSignature, dynamb);
+}
+
+
+// Update the devices with the given dynamb, as required
+function updateDevices(deviceSignature, dynamb) {
+  let continuousDataProperties = [];
+
+  CONTINUOUS_PROPERTIES.forEach((property) => {
+    if(dynamb.hasOwnProperty(property)) {
+      continuousDataProperties.push(property);
+    };
+  });
+
+  if(continuousDataProperties.length === 0) return;
+
+  if(!devices.has(deviceSignature)) {
+    devices.set(deviceSignature, { dynamb: {}, properties: {} });
+  }
+
+  let device = devices.get(deviceSignature);
+  continuousDataProperties.forEach((property) => {
+    if(!device.properties.hasOwnProperty(property) ||
+       (device.properties[property].timestamp < dynamb.timestamp)) {
+      device.properties[property] = { value: dynamb[property],
+                                      timestamp: dynamb.timestamp };
+    }
+  });
+
+  for(const property in device.properties) {
+    device.dynamb[property] = device.properties[property].value;
+  }
+
+  if(!device.dynamb.hasOwnProperty('timestamp') ||
+     (device.dynamb.timestamp < dynamb.timestamp)) {
+    device.dynamb.timestamp = dynamb.timestamp;
+  }
+}
+
+
+// Remove stale data from the devices
+function removeStaleDevicesData() {
+  let staleTimestamp = Date.now() - CONTINUOUS_HISTORY_MILLISECONDS;
+
+  devices.forEach((device, deviceSignature) => {
+    let isStale = device.dynamb.timestamp < staleTimestamp;
+    if(isStale) {
+      devices.delete(deviceSignature);
+    }
+    else {
+      for(const property in device.properties) {
+        isStale = (device.properties[property].timestamp < staleTimestamp);
+        if(isStale) {
+          delete device.properties[property];
+          delete device.dynamb[property];
+        }
+      }
+    }
+  });
+
+  setTimeout(removeStaleDevicesData, CONTINUOUS_UPDATE_MILLISECONDS);
 }
 
 
