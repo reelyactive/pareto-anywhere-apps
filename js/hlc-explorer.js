@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2021-2023
+ * Copyright reelyActive 2021-2024
  * We believe in an open Internet of Things
  */
 
@@ -31,6 +31,8 @@ let enablePollingSwitch = document.querySelector('#enablePollingSwitch');
 let enablePollingMessage = document.querySelector('#enablePollingMessage');
 let intervalValue = document.querySelector('#intervalValue');
 let intervalRange = document.querySelector('#intervalRange');
+let minRSSIValue = document.querySelector('#minRSSIValue');
+let minRSSIRange = document.querySelector('#minRSSIRange');
 let searchRoute = document.querySelector('#searchRoute');
 let time = document.querySelector('#time');
 let offcanvas = document.querySelector('#offcanvas');
@@ -57,6 +59,7 @@ let baseUrl = window.location.protocol + '//' + window.location.hostname +
 let selectedRoute = CONTEXT_ROUTE;
 let isPollPending = false;
 let pollingInterval;
+let minRSSI;
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
 let storyImageData;
@@ -104,6 +107,7 @@ createStory.onclick = createAndAssociateStory;
 // Monitor updates controls
 enablePollingSwitch.onchange = updateUpdates;
 intervalRange.onchange = updateUpdates;
+minRSSIRange.onchange = updateFilters;
 
 
 // Initialisation: poll the context once and display the result
@@ -133,6 +137,7 @@ function init(isInitialPageLoad) {
   bsOffcanvas.hide();
 
   updateUpdates();
+  updateFilters();
 }
 
 
@@ -173,7 +178,7 @@ function displayDevices(devices) {
       }
     });
   });
-  charlotte.spin(devices, target, {});
+  charlotte.spin(devices, target, { filters: { minRSSI: minRSSI } });
   time.textContent = new Date().toLocaleTimeString([], TIME_OPTIONS);
 }
 
@@ -220,6 +225,13 @@ function updateUpdates() {
 
   intervalRangeDisplay.hidden = !enablePollingSwitch.checked;
   updateSearchString();
+}
+
+
+function updateFilters() {
+  minRSSIValue.textContent = minRSSIRange.value;
+  minRSSI = parseInt(minRSSIRange.value);
+  console.log(minRSSI);
 }
 
 
