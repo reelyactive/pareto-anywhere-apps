@@ -1,26 +1,36 @@
 /**
- * Copyright reelyActive 2023
+ * Copyright reelyActive 2023-2024
  * We believe in an open Internet of Things
  */
 
 
 // Constant definitions
 const DEMO_SEARCH_PARAMETER = 'demo';
-const TIME_OPTIONS = { hour12: false };
-const TWIN_COLS = 'col-md-4 col-xl-3';
-const RTLS_COLS = 'col-md-4 col-xl-5';
-const DATA_COLS = 'col-md-4 col-xl-4';
+const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", second: "2-digit",
+                       hour12: false };
+const CLOCK_OPTIONS = { hour: "2-digit", minute: "2-digit", second: "2-digit",
+                        hour12: false };
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
+let filterSelect = document.querySelector('#filterSelect');
+let searchInput = document.querySelector('#searchInput');
 let time = document.querySelector('#time');
-let devicesDisplay = document.querySelector('#devicesDisplay');
+let devicesCount = document.querySelector('#devicesCount');
+let devicesTableBody = document.querySelector('#devicesTableBody');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let displayedDevices = new Map();
+
+// Update clock
+updateClock();
+
+// Handle filter/seach events
+filterSelect.addEventListener('change', sortDisplayedDevices);
+searchInput.addEventListener('input', handleSearchInput);
 
 // Handle beaver events
 beaver.on('appearance', handleAppearance);
@@ -65,25 +75,31 @@ else {
   beaver.stream(baseUrl, { io: io });
 }
 
+// Update the clock to the current time
+function updateClock() {
+  time.textContent = new Date().toLocaleTimeString([], CLOCK_OPTIONS);
+  setTimeout(updateClock, 1000 - Date.now() % 1000);
+}
+
 // Handle a device appearance
 function handleAppearance(deviceSignature, device) {
-  cormorant.retrieveDigitalTwin(deviceSignature, device, null,
-                                (digitalTwin, isRetrievedFromMemory) => {
-    if(isPassingFilters(deviceSignature, device, digitalTwin)) {
-      let deviceDisplay = createDeviceDisplay(deviceSignature, device,
-                                              digitalTwin);
-      displayedDevices.set(deviceSignature, deviceDisplay);
-      devicesDisplay.appendChild(deviceDisplay);
-    }
-  });
+  if(isPassingFilters(deviceSignature, device, null)) {
+    let deviceRow = createDeviceRow(deviceSignature, device);
+    deviceRow.hidden = !deviceSignature.includes(searchInput.value);
+    displayedDevices.set(deviceSignature, deviceRow);
+    devicesTableBody.appendChild(deviceRow);
+    sortDisplayedDevices();
+  }
+  devicesCount.textContent = beaver.devices.size;
 }
 
 // Handle a device disappearance
 function handleDisappearance(deviceSignature, device) {
   if(displayedDevices.has(deviceSignature)) {
-    devicesDisplay.removeChild(displayedDevices.get(deviceSignature));
+    devicesTableBody.removeChild(displayedDevices.get(deviceSignature));
     displayedDevices.delete(deviceSignature);
   }
+  devicesCount.textContent = beaver.devices.size;
 }
 
 // Handle a raddec
@@ -91,8 +107,9 @@ function handleRaddec(raddec) {
   let deviceSignature = raddec.transmitterId + '/' + raddec.transmitterIdType;
 
   if(displayedDevices.has(deviceSignature)) {
-    let rtlsContent = document.getElementById(deviceSignature + '-rtls');
-    renderRssiSignature(raddec.rssiSignature, rtlsContent);
+    updateDeviceRow(displayedDevices.get(deviceSignature),
+                    beaver.devices.get(deviceSignature));
+    sortDisplayedDevices();
   }
 }
 
@@ -101,9 +118,41 @@ function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
 
   if(displayedDevices.has(deviceSignature)) {
-    let dataContent = document.getElementById(deviceSignature + '-data');
-    cuttlefishDynamb.render(dynamb, dataContent);
+    // TODO
   }
+}
+
+// Handle a search input
+function handleSearchInput() {
+  displayedDevices.forEach((row, deviceSignature) => {
+    row.hidden = !deviceSignature.includes(searchInput.value);
+  });
+}
+
+// Sort the displayed devices based on the filter selection
+function sortDisplayedDevices() {
+  if(filterSelect.value === 'none') return;
+
+  let sortedDevices = [];
+
+  for(const tr of devicesTableBody.childNodes) {
+    if(tr.nodeType === 1) {
+      sortedDevices.push(tr);
+    }
+  }
+
+  sortedDevices.sort((a, b) => {
+    switch(filterSelect.value) {
+      case 'rssiDec':
+        return (Number(b.childNodes[2].textContent) || -200) -
+               (Number(a.childNodes[2].textContent) || -200);
+      case 'rssiInc':
+        return (Number(a.childNodes[2].textContent) || -200) -
+               (Number(b.childNodes[2].textContent) || -200);
+    }
+  });
+
+  sortedDevices.forEach((tr) => { devicesTableBody.appendChild(tr); });
 }
 
 // Determine if the given device and digital twin passes the specified filters
@@ -111,54 +160,94 @@ function isPassingFilters(deviceSignature, device, digitalTwin) {
   return true; // TODO: actually check
 }
 
-// Create the device display
-function createDeviceDisplay(deviceSignature, device, digitalTwin) {
-  let twinContent = deviceSignature;
-  if(digitalTwin) { twinContent = cuttlefishStory.render(digitalTwin.story); }
-  let rtlsContent = '';
-  if(device.raddec) { rtlsContent = device.raddec.rssiSignature[0]; }
-  let dataContent = cuttlefishDynamb.render(device.dynamb || {});
-  let twinCol = createElement('div', TWIN_COLS, twinContent);
-  let rtlsCol = createElement('div', RTLS_COLS, rtlsContent);
-  let dataCol = createElement('div', DATA_COLS, dataContent);
-  let row = createElement('div', 'row my-4', [ twinCol, rtlsCol, dataCol ]);
-
-  twinCol.setAttribute('id', deviceSignature + '-twin');
-  rtlsCol.setAttribute('id', deviceSignature + '-rtls');
-  dataCol.setAttribute('id', deviceSignature + '-data');
-
-  return row;
+// Create the device row
+function createDeviceRow(deviceSignature, device) {
+  let tds = [];
+  tds.push(createElement('td', 'font-monospace', deviceSignature));
+  tds.push(createElement('td', null, createDeviceEvents(device)));
+  tds.push(createElement('td', null, createDeviceRssi(device)));
+  tds.push(createElement('td', 'font-monospace', createDeviceReceiver(device)));
+  tds.push(createElement('td', null, createDeviceRecDecPac(device)));
+  tds.push(createElement('td', 'font-monospace',
+                         createDeviceTimestamp(device)));
+  return createElement('tr', 'table-active', tds);
 }
 
-// Render the rssiSignature
-function renderRssiSignature(rssiSignature, target) {
-  let table = createElement('table', 'table');
+// Update the device row
+function updateDeviceRow(deviceRow, device) {
+  if(deviceRow.childNodes.length !== 6) {
+    return; // TODO: create row anew?
+  }
 
-  rssiSignature.forEach((entry) => {
-    let receiverSignature = entry.receiverId + '/' + entry.receiverIdType;
-    let title = receiverSignature;
-    let imgUrl = '';
+  deviceRow.setAttribute('class', '');
+  let tdEvents = createElement('td', null, createDeviceEvents(device));
+  deviceRow.childNodes[1].replaceWith(tdEvents);
+  deviceRow.childNodes[2].textContent = createDeviceRssi(device);
+  deviceRow.childNodes[3].textContent = createDeviceReceiver(device);
+  deviceRow.childNodes[4].textContent = createDeviceRecDecPac(device);
+  deviceRow.childNodes[5].textContent = createDeviceTimestamp(device);
+}
 
-    if(cormorant.digitalTwins.has(receiverSignature)) {
-      let digitalTwin = cormorant.digitalTwins.get(receiverSignature);
-      title = cuttlefishStory.determineTitle(digitalTwin.story);
-      imgUrl = cuttlefishStory.determineImageUrl(digitalTwin.story);
-    }
+// Create the device events icons
+function createDeviceEvents(device) {
+  let eventIcons = [];
 
-    let image = createElement('img', 'img-thumbnail');
-    let tdImg = createElement('td', 'w-25', image);
-    let tdTitle = createElement('td', 'lead', title);
-    let tdRssi = createElement('td', 'font-monospace', [
-      createElement('span', 'display-6', entry.rssi),
-      createElement('span', 'text-muted', 'dBm')
-    ]);
-    let tr = createElement('tr', null, [ tdImg, tdTitle, tdRssi ]);
+  if(Array.isArray(device.raddec?.events)) {
+    let iconClass;
+    device.raddec.events.forEach((event) => {
+      switch(event) {
+        case 0: iconClass = 'fa-sign-in-alt me-2'; break;
+        case 1: iconClass = 'fa-route me-2'; break;
+        case 2: iconClass = 'fa-info me-2'; break;
+        case 3: iconClass = 'fa-heartbeat me-2'; break;
+        case 4: iconClass = 'fa-sign-out-alt me-2'; break;
+      }
+      eventIcons.push(createElement('i', 'fas ' + iconClass));
+    });
+  }
 
-    image.setAttribute('src', imgUrl);
-    table.appendChild(tr);
-  });
+  return eventIcons;
+}
 
-  target.replaceChildren(table);
+// Create the device rssi
+function createDeviceRssi(device) {
+  if(Array.isArray(device.raddec?.rssiSignature) &&
+     device.raddec.rssiSignature.length > 0) {
+    return device.raddec.rssiSignature[0].rssi;
+  }
+  return '-';
+}
+
+// Create the device receiver
+// TODO: receiverAntenna
+function createDeviceReceiver(device) {
+  if(Array.isArray(device.raddec?.rssiSignature) &&
+     device.raddec.rssiSignature.length > 0) {
+    return device.raddec.rssiSignature[0].receiverId + '/' +
+           device.raddec.rssiSignature[0].receiverIdType;
+  }
+  return '-';
+}
+
+// Create the device number of receivers/decodings/packets
+function createDeviceRecDecPac(device) {
+  let maxNumberOfDecodings = 0;
+  if(Array.isArray(device.raddec?.rssiSignature)) {
+    device.raddec.rssiSignature.forEach((receiver) => {
+      if(receiver.numberOfDecodings > maxNumberOfDecodings) {
+        maxNumberOfDecodings = receiver.numberOfDecodings;
+      }
+    });
+  }
+  return (device.raddec?.rssiSignature?.length || '-') + ' / ' +
+         ((maxNumberOfDecodings === 0) ? '-' : maxNumberOfDecodings) + ' / ' +
+         (device.raddec?.packets?.length || '-');
+}
+
+// Create the device timestamp
+function createDeviceTimestamp(device) {
+  let timestamp = device.raddec?.timestamp || Date.now();
+  return new Date(timestamp).toLocaleTimeString([], TIME_OPTIONS);
 }
 
 // Create an element as specified

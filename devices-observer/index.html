@@ -122,16 +122,6 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://github.com/reelyactive/charlotte/">
-                    <i class="fab fa-js"></i>
-                    charlotte.js &nbsp;
-                    <span class="badge bg-light text-dark">
-                      <i class="fab fa-osi"></i> MIT
-                    </span>
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" target="_blank"
                      href="https://github.com/reelyactive/cuttlefish/">
                     <i class="fab fa-js"></i>
                     cuttlefish.js &nbsp;
@@ -155,16 +145,6 @@
                      href="https://github.com/reelyactive/beaver/">
                     <i class="fab fa-js"></i>
                     beaver.js &nbsp;
-                    <span class="badge bg-light text-dark">
-                      <i class="fab fa-osi"></i> MIT
-                    </span>
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" target="_blank"
-                     href="https://js.cytoscape.org/" >
-                    <i class="fab fa-js"></i>
-                    cytoscape.js &nbsp;
                     <span class="badge bg-light text-dark">
                       <i class="fab fa-osi"></i> MIT
                     </span>
@@ -198,7 +178,7 @@
     <!-- Content -->
     <div class="container-fluid">
       <div class="row justify-content-center">
-        <div class="col-md-12 col-lg-10 col-xl-8 col-xxl-10">
+        <div class="col-12 col-xl-10">
           <div class="alert alert-ambient alert-dismissible fade show mt-5"
                role="alert" id="demoalert" hidden>
             <i class="fas fa-exclamation-triangle animate-breathing me-2"></i>
@@ -208,8 +188,81 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"
                     aria-label="Close"></button>
           </div>
-          <div id="devicesDisplay" class="mt-5">
+          <!-- Title card -->
+          <div class="card text-bg-primary mt-5">
+            <div class="row">
+              <div class="col-lg-3 align-self-center">
+                <div class="card-body">
+                  <h4 class="card-title mb-0"> Devices Observer </h4>
+                </div>
+              </div>
+              <div class="col-lg-6 align-self-center">
+                <div class="card-body">
+                  <div class="input-group">
+                    <span class="input-group-text" id="filterIcon">
+                      <i class="fas fa-filter"></i>
+                    </span>
+                    <select id="filterSelect" class="form-select"
+                            aria-label="Filter select"
+                            aria-describedby="filterIcon">
+                      <option value="none" selected> No filter </option>
+                      <option value="rssiDec"> Decreasing rssi </option>
+                      <option value="rssiInc"> Increasing rssi </option>
+                    </select>
+                    <span class="input-group-text" id="searchIcon">
+                      <i class="fas fa-search"></i>
+                    </span>
+                    <input id="searchInput" type="text" class="form-control"
+                           placeholder="Search by id" aria-label="Search"
+                           aria-describedby="searchIcon">
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 text-end align-self-center">
+                <div class="card-body">
+                  <p class="card-text mb-0">
+                    <i class="fas fa-barcode"></i>
+                    <span id="devicesCount" class="font-monospace me-2">0</span>
+                    <i class="fas fa-clock"></i>
+                    <span id="time" class="font-monospace"></span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+          <!-- Devices table -->
+          <table id="devicesTable" class="table table-hover my-4">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <i class="fas fa-barcode"></i> device<br>
+                  <small class="text-body-tertiary">(signature)</small>
+                </th>
+                <th scope="col">
+                  <i class="fas fa-exchange-alt"></i> events<br>
+                  <small class="text-body-tertiary">(latest)</small>
+                </th>
+                <th scope="col">
+                  <i class="fas fa-signal"></i> rssi<br>
+                  <small class="text-body-tertiary">(strongest)</small>
+                </th>
+                <th scope="col">
+                  <i class="fas fa-map-pin"></i> receiver<br>
+                  <small class="text-body-tertiary">(strongest)</small>
+                </th>
+                <th scope="col">
+                  <i class="fas fa-info-circle"></i> rec/dec/pac<br>
+                  <small class="text-body-tertiary">(# since event)</small>
+                </th>
+                <th scope="col">
+                  <i class="fas fa-clock"></i> timestamp<br>
+                  <small class="text-body-tertiary">(latest event)</small>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="devicesTableBody">
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -224,12 +277,7 @@
     <!-- Optional JavaScript -->
     <script defer src="../js/fontawesome-reelyactive.min.js"></script>
     <script src="../js/bootstrappyactive.bundle.min.js"></script>
-    <script src="../js/cytoscape.min.js"></script>
-    <script src="../js/layout-base.js"></script>
-    <script src="../js/cose-base.js"></script>
-    <script src="../js/cytoscape-fcose.js"></script>
     <script src="../js/socket.io.min.js"></script>
-    <script src="../js/charlotte.js"></script>
     <script src="../js/cormorant.js"></script>
     <script src="../js/beaver.js"></script>
     <script src="../js/cuttlefish-story.js"></script>
