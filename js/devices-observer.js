@@ -162,6 +162,7 @@ function isPassingFilters(deviceSignature, device, digitalTwin) {
 
 // Create the device row
 function createDeviceRow(deviceSignature, device) {
+  let isAppearance = device.raddec?.events.includes(0);
   let tds = [];
   tds.push(createElement('td', 'font-monospace', deviceSignature));
   tds.push(createElement('td', null, createDeviceEvents(device)));
@@ -170,7 +171,7 @@ function createDeviceRow(deviceSignature, device) {
   tds.push(createElement('td', null, createDeviceRecDecPac(device)));
   tds.push(createElement('td', 'font-monospace',
                          createDeviceTimestamp(device)));
-  return createElement('tr', 'table-active', tds);
+  return createElement('tr', isAppearance ? 'table-active' : '', tds);
 }
 
 // Update the device row
@@ -179,8 +180,10 @@ function updateDeviceRow(deviceRow, device) {
     return; // TODO: create row anew?
   }
 
-  deviceRow.setAttribute('class', '');
+  let isAppearance = device.raddec?.events.includes(0);
   let tdEvents = createElement('td', null, createDeviceEvents(device));
+
+  deviceRow.setAttribute('class', isAppearance ? 'table-active' : '');
   deviceRow.childNodes[1].replaceWith(tdEvents);
   deviceRow.childNodes[2].textContent = createDeviceRssi(device);
   deviceRow.childNodes[3].textContent = createDeviceReceiver(device);
