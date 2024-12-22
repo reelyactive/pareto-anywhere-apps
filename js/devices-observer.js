@@ -162,7 +162,7 @@ function isPassingFilters(deviceSignature, device, digitalTwin) {
 
 // Create the device row
 function createDeviceRow(deviceSignature, device) {
-  let isAppearance = device.raddec?.events.includes(0);
+  let isAppearance = device.raddec?.events?.includes(0);
   let tds = [];
   tds.push(createElement('td', 'font-monospace', deviceSignature));
   tds.push(createElement('td', null, createDeviceEvents(device)));
@@ -180,15 +180,20 @@ function updateDeviceRow(deviceRow, device) {
     return; // TODO: create row anew?
   }
 
-  let isAppearance = device.raddec?.events.includes(0);
+  let isAppearance = device.raddec?.events?.includes(0);
+  let isDisplacement = device.raddec?.events?.includes(1);
   let tdEvents = createElement('td', null, createDeviceEvents(device));
 
-  deviceRow.setAttribute('class', isAppearance ? 'table-active' : '');
   deviceRow.childNodes[1].replaceWith(tdEvents);
   deviceRow.childNodes[2].textContent = createDeviceRssi(device);
   deviceRow.childNodes[3].textContent = createDeviceReceiver(device);
   deviceRow.childNodes[4].textContent = createDeviceRecDecPac(device);
   deviceRow.childNodes[5].textContent = createDeviceTimestamp(device);
+  deviceRow.setAttribute('class', isAppearance ? 'table-active' : '');
+  deviceRow.childNodes[2].setAttribute('class', isDisplacement ? 'fw-bold' : '');
+  deviceRow.childNodes[3].setAttribute('class', isDisplacement ?
+                                                'font-monospace fw-bold' :
+                                                'font-monospace');
 }
 
 // Create the device events icons
