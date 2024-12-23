@@ -10,6 +10,14 @@ const TIME_OPTIONS = { hour: "2-digit", minute: "2-digit", second: "2-digit",
                        hour12: false };
 const CLOCK_OPTIONS = { hour: "2-digit", minute: "2-digit", second: "2-digit",
                         hour12: false };
+const DIRECTORY_ROUTE = '/directory';
+const TAG_ROUTE = '/tag';
+const ASSOCIATIONS_ROUTE = '/associations';
+const URL_ROUTE = '/url';
+const TAGS_ROUTE = '/tags';
+const POSITION_ROUTE = '/position';
+const STORIES_ROUTE = '/stories';
+const IMAGES_ROUTE = '/store/images';
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
@@ -19,11 +27,29 @@ let searchInput = document.querySelector('#searchInput');
 let time = document.querySelector('#time');
 let devicesCount = document.querySelector('#devicesCount');
 let devicesTableBody = document.querySelector('#devicesTableBody');
+let offcanvas = document.querySelector('#offcanvas');
+let offcanvasTitle = document.querySelector('#offcanvasTitle');
+let offcanvasBody = document.querySelector('#offcanvasBody');
+let storyDisplay = document.querySelector('#storyDisplay');
+let dynambDisplay = document.querySelector('#dynambDisplay');
+let inputImage = document.querySelector('#inputImage');
+let createStory = document.querySelector('#createStory');
+let inputUrl = document.querySelector('#inputUrl');
+let inputTags = document.querySelector('#inputTags');
+let inputDirectory = document.querySelector('#inputDirectory');
+let inputPosition = document.querySelector('#inputPosition');
+let updateUrl = document.querySelector('#updateUrl');
+let updateTags = document.querySelector('#updateTags');
+let updateDirectory = document.querySelector('#updateDirectory');
+let updatePosition = document.querySelector('#updatePosition');
+let associationError = document.querySelector('#associationError');
 
 // Other variables
 let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let displayedDevices = new Map();
+let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
+let selectedDeviceSignature;
 
 // Update clock
 updateClock();
@@ -50,6 +76,9 @@ beaver.on('error', (error) => {
 beaver.on('disconnect', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-warning'));
 });
+
+// Monitor buttons
+createStory.onclick = createAndAssociateStory;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -117,8 +146,9 @@ function handleRaddec(raddec) {
 function handleDynamb(dynamb) {
   let deviceSignature = dynamb.deviceId + '/' + dynamb.deviceIdType;
 
-  if(displayedDevices.has(deviceSignature)) {
-    // TODO
+  if(deviceSignature === selectedDeviceSignature) {
+    let dynambContent = cuttlefishDynamb.render(dynamb);
+    dynambDisplay.replaceChildren(dynambContent);
   }
 }
 
@@ -127,6 +157,14 @@ function handleSearchInput() {
   displayedDevices.forEach((row, deviceSignature) => {
     row.hidden = !deviceSignature.includes(searchInput.value);
   });
+}
+
+// Handle device click
+function handleDeviceClick(deviceSignature) {
+  selectedDeviceSignature = deviceSignature;
+  offcanvasTitle.textContent = selectedDeviceSignature;
+  updateOffcanvasBody(selectedDeviceSignature);
+  bsOffcanvas.show();
 }
 
 // Sort the displayed devices based on the filter selection
@@ -164,13 +202,14 @@ function isPassingFilters(deviceSignature, device, digitalTwin) {
 function createDeviceRow(deviceSignature, device) {
   let isAppearance = device.raddec?.events?.includes(0);
   let tds = [];
-  tds.push(createElement('td', 'font-monospace', deviceSignature));
+  tds.push(createElement('td', null, createDeviceSignature(deviceSignature)));
   tds.push(createElement('td', null, createDeviceEvents(device)));
   tds.push(createElement('td', null, createDeviceRssi(device)));
   tds.push(createElement('td', 'font-monospace', createDeviceReceiver(device)));
   tds.push(createElement('td', null, createDeviceRecDecPac(device)));
   tds.push(createElement('td', 'font-monospace',
                          createDeviceTimestamp(device)));
+
   return createElement('tr', isAppearance ? 'table-active' : '', tds);
 }
 
@@ -194,6 +233,15 @@ function updateDeviceRow(deviceRow, device) {
   deviceRow.childNodes[3].setAttribute('class', isDisplacement ?
                                                 'font-monospace fw-bold' :
                                                 'font-monospace');
+}
+
+// Create the device signature
+function createDeviceSignature(signature) {
+  let a = createElement('a', 'font-monospace text-decoration-none', signature);
+
+  a.addEventListener('click', (event) => { handleDeviceClick(signature); });
+
+  return a;
 }
 
 // Create the device events icons
@@ -257,6 +305,211 @@ function createDeviceTimestamp(device) {
   let timestamp = device.raddec?.timestamp || Date.now();
   return new Date(timestamp).toLocaleTimeString([], TIME_OPTIONS);
 }
+
+// Update the offcanvas body based on the selected device
+function updateOffcanvasBody(deviceSignature) {
+  let device = beaver.devices.get(deviceSignature) || {};
+  let dropdownItems = new DocumentFragment();
+  let dynambContent = new DocumentFragment();
+  let statidContent = new DocumentFragment();
+
+  if(cormorant.digitalTwins.has(deviceSignature)) {
+    let story = cormorant.digitalTwins.get(deviceSignature).story;
+    cuttlefishStory.render(story, storyDisplay);
+  }
+  else {
+    storyDisplay.replaceChildren();
+    cormorant.retrieveDigitalTwin(deviceSignature, device, null,
+                                  (digitalTwin, isRetrievedFromMemory) => {
+      cuttlefishStory.render(digitalTwin.story, storyDisplay);
+    });
+  }
+
+  inputUrl.value = device.url || '';
+  inputTags.value = device.tags || '';
+  inputDirectory.value = device.directory || '';
+  inputPosition.value = device.position || '';
+
+  if(device.hasOwnProperty('dynamb')) {
+    dynambContent = cuttlefishDynamb.render(device.dynamb);
+  }
+  if(device.hasOwnProperty('statid')) {
+    statidContent = cuttlefishStatid.render(device.statid);
+  }
+
+  dynambDisplay.replaceChildren(dynambContent);
+  statidDisplay.replaceChildren(statidContent);
+}
+
+// Create the story
+function postStory(story, callback) {
+  let httpRequest = new XMLHttpRequest();
+
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if(httpRequest.status === 201) {
+        let response = JSON.parse(httpRequest.responseText);
+        let storyId = Object.keys(response.stories)[0];
+        let storyUrl = baseUrl + STORIES_ROUTE + '/' + storyId;
+        callback(storyUrl);
+      }
+      else {
+        callback();
+      }
+    }
+  };
+  httpRequest.open('POST', baseUrl + STORIES_ROUTE);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(JSON.stringify(story));
+}
+
+// Create the image
+function postImage(callback) {
+  let httpRequest = new XMLHttpRequest();
+  let formData = new FormData();
+  formData.append('image', inputImage.files[0]);
+
+  httpRequest.onload = function(event) {
+    if(httpRequest.status === 201) {
+      let response = JSON.parse(httpRequest.responseText);
+      let imageId = Object.keys(response.images)[0];
+      let url = baseUrl + IMAGES_ROUTE + '/' + imageId;
+
+      return callback(url);
+    }
+    else {
+      return callback();
+    } 
+  };
+  httpRequest.open('POST', baseUrl + IMAGES_ROUTE, true);
+  httpRequest.send(formData);  
+}
+
+// Create and associate the story given in the form
+function createAndAssociateStory() {
+  let hasImageFile = (inputImage.files.length > 0);
+  let name = inputName.value;
+  let id = name.toLowerCase();
+  let type = 'schema:' + inputSelectType.value;
+  let story = {
+      "@context": {
+        "schema": "http://schema.org/"
+      },
+      "@graph": [
+        {
+          "@id": id,
+          "@type": type,
+          "schema:name": name
+        }
+      ]
+  };
+
+  if(hasImageFile) {
+    postImage((imageUrl) => {
+      if(imageUrl) {
+        story['@graph'][0]["schema:image"] = imageUrl;
+      }
+      postStory(story, (storyUrl) => {
+        if(storyUrl) {
+          putAssociationProperty(URL_ROUTE, { url: storyUrl },
+                                 handlePropertyUpdate);
+          cuttlefishStory.render(story, storyDisplay);
+        }
+      });
+    });
+  }
+  else {
+    postStory(story, (storyUrl) => {
+      if(storyUrl) {
+        putAssociationProperty(URL_ROUTE, { url: storyUrl },
+                               handlePropertyUpdate);
+        cuttlefishStory.render(story, storyDisplay);
+      }
+    });
+  }
+}
+
+// PUT the given association property
+function putAssociationProperty(route, json, callback) {
+  let url = baseUrl + ASSOCIATIONS_ROUTE + '/' + selectedDeviceSignature +
+            route;
+  let httpRequest = new XMLHttpRequest();
+  let jsonString = JSON.stringify(json);
+
+  associationError.hidden = true;
+  httpRequest.onreadystatechange = function() {
+    if(httpRequest.readyState === XMLHttpRequest.DONE) {
+      if((httpRequest.status === 200) ||
+         (httpRequest.status === 201)) {
+        return callback(httpRequest.status,
+                        JSON.parse(httpRequest.responseText));
+      }
+      else {
+        return callback(httpRequest.status);
+      }
+    }
+  };
+  httpRequest.open('PUT', url);
+  httpRequest.setRequestHeader('Content-Type', 'application/json');
+  httpRequest.setRequestHeader('Accept', 'application/json');
+  httpRequest.send(jsonString);
+}
+
+// Handle the update of an association property
+function handlePropertyUpdate(status, response) {
+  if(status === 200) {
+    deviceIdSignature = Object.keys(response.associations)[0];
+    let deviceAssociations = response.associations[deviceIdSignature];
+    inputUrl.value = deviceAssociations.url || '';
+    inputTags.value = deviceAssociations.tags || '';
+    inputDirectory.value =  deviceAssociations.directory || '';
+    inputPosition.value = deviceAssociations.position || '';
+  }
+  else if(status === 400) {
+    associationErrorMessage.textContent = 'Error: Bad Request [400].';
+    associationError.hidden = false;
+  }
+  else if(status === 404) {
+    associationErrorMessage.textContent = 'Error: Not Found [404].';
+    associationError.hidden = false;
+  }
+}
+
+// Association update functions (by property)
+let associationActions = {
+    "url":
+       function() {
+         let json = { url: inputUrl.value };
+         putAssociationProperty(URL_ROUTE, json, handlePropertyUpdate);
+       },
+    "tags":
+       function() {
+         let json = { tags: inputTags.value.split(',') };
+         putAssociationProperty(TAGS_ROUTE, json, handlePropertyUpdate);
+       },
+    "directory":
+       function() {
+         let json = { directory: inputDirectory.value };
+         putAssociationProperty(DIRECTORY_ROUTE, json, handlePropertyUpdate);
+       },
+    "position":
+       function() {
+         let positionArray = [];
+
+         inputPosition.value.split(',').forEach(function(coordinate) {
+           positionArray.push(parseFloat(coordinate));
+         });
+
+         let json = { position: positionArray };
+         putAssociationProperty(POSITION_ROUTE, json, handlePropertyUpdate);
+       }
+};
+
+updateUrl.onclick = associationActions['url'];
+updateTags.onclick = associationActions['tags'];
+updateDirectory.onclick = associationActions['directory'];
+updatePosition.onclick = associationActions['position'];
 
 // Create an element as specified
 function createElement(elementName, classNames, content) {

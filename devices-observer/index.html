@@ -266,6 +266,129 @@
           </table>
         </div>
       </div>
+      <div class="offcanvas offcanvas-end visible" data-bs-scroll="true"
+           data-bs-backdrop="false" tabindex="-1" id="offcanvas"
+           aria-labelledby="offcanvasTitle">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title">
+            <span class="badge rounded-pill bg-secondary">
+              <i class="fas fa-barcode"></i>
+            </span>
+            <span class="font-monospace user-select-all"
+                  id="offcanvasTitle"></span>
+          </h5>
+          <button type="button" class="btn-close text-reset"
+                  data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body" id="offcanvasBody">
+          <div id="storyDisplay"></div>
+          <div id="dynambDisplay" class="my-4"></div>
+          <div id="statidDisplay" class="my-4"></div>
+          <div id="editDisplay" class="my-4">
+            <ul class="nav nav-tabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="storytab"
+                        data-bs-toggle="tab" data-bs-target="#storycontent"
+                        type="button" role="tab" aria-controls="storytab"
+                        aria-selected="true"> Story </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="associationstab" role="tab"
+                        data-bs-toggle="tab" aria-controls="associationstab"
+                        data-bs-target="#associationscontent" type="button" 
+                        aria-selected="false"> Associations </button>
+              </li>
+            </ul>
+            <div class="tab-content tab-content-border border-light-subtle">
+              <!-- Story tab -->
+              <div class="tab-pane fade show active" id="storycontent"
+                   role="tabpanel" aria-labelledby="storytab">
+                <form class="my-2" onsubmit="return false;">
+                  <select class="form-select mb-2" id="inputSelectType"
+                          aria-label="Story type">
+                    <option value="Product" selected> Product </option>
+                    <option value="Person">Person</option>
+                    <option value="Place">Place</option>
+                  </select>
+                  <div class="input-group mb-2">
+                    <span class="input-group-text"> Name </span>
+                    <input class="form-control" id="inputName" type="text"
+                           aria-label="Name">
+                  </div>
+                  <div class="form-group mb-2">
+                    <label for="inputImage"> Image </label>
+                    <input type="file" class="form-control-file" 
+                           id="inputImage">
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-sm btn-primary"
+                            id="createStory">
+                      Store & Associate
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <!-- Associations tab -->
+              <div class="tab-pane fade" id="associationscontent"
+                   role="tabpanel" aria-labelledby="associationstab">
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-link"></i> &nbsp; url
+                    </span>
+                    <input class="form-control" id="inputUrl" type="url">
+                      <button class="btn btn-primary" type="button"
+                              id="updateUrl">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-tags"></i> &nbsp; tags
+                    </span>
+                    <input class="form-control" id="inputTags" type="text">
+                      <button class="btn btn-primary" type="button"
+                              id="updateTags">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-sitemap"></i> &nbsp; directory
+                    </span>
+                    <input class="form-control" id="inputDirectory" type="text">
+                      <button class="btn btn-primary" type="button"
+                              id="updateDirectory">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <form class="my-2" onsubmit="return false;">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="fas fa-map-marked-alt"></i> &nbsp; position
+                    </span>
+                    <input class="form-control" id="inputPosition" type="text">
+                      <button class="btn btn-primary" type="button"
+                              id="updatePosition">
+                        <i class="fas fa-save"></i>
+                      </button>
+                    </input>
+                  </div>
+                </form>
+                <p id="associationError" hidden></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <footer class="footer bg-dark bg-gradient">
       <a href="https://github.com/reelyactive/pareto-anywhere-apps">
