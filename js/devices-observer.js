@@ -104,9 +104,10 @@ else {
   beaver.stream(baseUrl, { io: io });
 }
 
-// Update the clock to the current time
+// Update the clock to the current time and sort devices
 function updateClock() {
   time.textContent = new Date().toLocaleTimeString([], CLOCK_OPTIONS);
+  sortDisplayedDevices();
   setTimeout(updateClock, 1000 - Date.now() % 1000);
 }
 
@@ -117,7 +118,6 @@ function handleAppearance(deviceSignature, device) {
     deviceRow.hidden = !deviceSignature.includes(searchInput.value);
     displayedDevices.set(deviceSignature, deviceRow);
     devicesTableBody.appendChild(deviceRow);
-    sortDisplayedDevices();
   }
   devicesCount.textContent = beaver.devices.size;
 }
@@ -138,7 +138,6 @@ function handleRaddec(raddec) {
   if(displayedDevices.has(deviceSignature)) {
     updateDeviceRow(displayedDevices.get(deviceSignature),
                     beaver.devices.get(deviceSignature));
-    sortDisplayedDevices();
   }
 }
 
@@ -174,7 +173,7 @@ function sortDisplayedDevices() {
   let sortedDevices = [];
 
   for(const tr of devicesTableBody.childNodes) {
-    if(tr.nodeType === 1) {
+    if((tr.nodeType === 1) && (tr.hidden !== true)) {
       sortedDevices.push(tr);
     }
   }
