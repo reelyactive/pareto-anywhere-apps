@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2023-2024
+ * Copyright reelyActive 2023-2025
  * We believe in an open Internet of Things
  */
 
@@ -18,10 +18,13 @@ const TAGS_ROUTE = '/tags';
 const POSITION_ROUTE = '/position';
 const STORIES_ROUTE = '/stories';
 const IMAGES_ROUTE = '/store/images';
+const MAX_STALE_MILLISECONDS = 10000;
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
+let stalealert = document.querySelector('#stalealert');
+let reviseTimestampsSwitch = document.querySelector('#reviseTimestampsSwitch');
 let filterSelect = document.querySelector('#filterSelect');
 let searchInput = document.querySelector('#searchInput');
 let time = document.querySelector('#time');
@@ -68,7 +71,10 @@ beaver.on('connect', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
   demoalert.hidden = true;
 });
-beaver.on('stats', (stats) => {});
+beaver.on('stats', (stats) => {
+  let isStale = (stats.averageEventStaleMilliseconds > MAX_STALE_MILLISECONDS);
+  stalealert.hidden = !isStale || reviseTimestampsSwitch.checked;
+});
 beaver.on('error', (error) => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
   demoalert.hidden = false;
@@ -80,28 +86,37 @@ beaver.on('disconnect', () => {
 // Monitor buttons
 createStory.onclick = createAndAssociateStory;
 
+// Monitor options controls
+reviseTimestampsSwitch.onchange = init;
+
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
 let isDemo = searchParams.has(DEMO_SEARCH_PARAMETER);
+init();
 
-// Demo mode: connect to starling.js
-if(isDemo) {
-  let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
-  let context = starling.getContext();
+// Initialise
+function init() {
+  beaver.reset();;
+  stalealert.hidden = true;
 
-  connectIcon.replaceChildren(demoIcon);
-  beaver.stream(null, { io: starling, ioUrl: "http://pareto.local" });
+  if(isDemo) { // Demo mode: connect to starling.js
+    let demoIcon = createElement('b', 'animate-breathing text-success', 'DEMO');
+    let context = starling.getContext();
 
-  for(let deviceSignature in context.devices) {
-    let device = context.devices[deviceSignature];
-    beaver.devices.set(deviceSignature, device);
-    handleAppearance(deviceSignature, device);
+    connectIcon.replaceChildren(demoIcon);
+    beaver.stream(null, { io: starling, ioUrl: "http://pareto.local",
+                          reviseTimestamps: reviseTimestampsSwitch.checked });
+
+    for(let deviceSignature in context.devices) {
+      let device = context.devices[deviceSignature];
+      beaver.devices.set(deviceSignature, device);
+      handleAppearance(deviceSignature, device);
+    }
   }
-}
-
-// Normal mode: connect to socket.io
-else {
-  beaver.stream(baseUrl, { io: io });
+  else { // Normal mode: connect to socket.io
+    beaver.stream(baseUrl, { io: io, reviseTimestamps:
+                                              reviseTimestampsSwitch.checked });
+  }
 }
 
 // Update the clock to the current time and sort devices
