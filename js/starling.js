@@ -226,6 +226,11 @@ let starling = (function() {
     return this;
   }
 
+  // Emulate a disconnection
+  let disconnect = function() {
+    isConnect = false;
+  }
+
   // Get the (emulated) context for a specific route
   let getContext = function(route) {
     return { devices: createDevices(route) };
@@ -249,7 +254,8 @@ let starling = (function() {
   return {
     on: setEventCallback,
     getContext: getContext,
-    connect: connect
+    connect: connect,
+    disconnect: disconnect
   }
 
 }());

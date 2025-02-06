@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2016-2023
+ * Copyright reelyActive 2016-2025
  * We believe in an open Internet of Things
  */
 
@@ -15,6 +15,7 @@ let beaver = (function() {
 
   // Internal variables
   let devices = new Map();
+  let sources = new Map();
   let eventCallbacks = { connect: [], raddec: [], dynamb: [], spatem: [],
                          poll: [], appearance: [], disappearance: [], stats: [],
                          error: [], disconnect: [] };
@@ -22,6 +23,9 @@ let beaver = (function() {
   let staleDeviceMilliseconds = DEFAULT_STALE_DEVICE_MILLISECONDS;
   let updateMilliseconds = DEFAULT_UPDATE_MILLISECONDS;
   let updateTimeout = null;
+  let reviseTimestamps = false;
+  let staleMillisecondsSum = 0;
+  let staleMillisecondsCount = 0;
   let lastUpdateTime;
 
   // Determine if the given URL is valid
@@ -61,11 +65,24 @@ let beaver = (function() {
     return trimmedSpatem;
   }
 
+  // Manage the timestamp of the given event
+  function manageTimestamp(event) {
+    if(event && Number.isInteger(event.timestamp)) {
+      let staleMilliseconds = Date.now() - event.timestamp;
+      staleMillisecondsSum += staleMilliseconds;
+      staleMillisecondsCount++;
+      if(reviseTimestamps) {
+        event.timestamp = Date.now();
+      }
+    }
+  }
+
   // Handle the given raddec
   function handleRaddec(raddec) {
     let signature = raddec.transmitterId + SIGNATURE_SEPARATOR +
                     raddec.transmitterIdType;
     let device = devices.get(signature);
+    manageTimestamp(raddec);
 
     if(device) {
       if(!device.hasOwnProperty('raddec') ||
@@ -90,6 +107,7 @@ let beaver = (function() {
     let signature = dynamb.deviceId + SIGNATURE_SEPARATOR +
                     dynamb.deviceIdType;
     let device = devices.get(signature);
+    manageTimestamp(dynamb);
 
     if(device) {
       if(!device.hasOwnProperty('dynamb') ||
@@ -117,6 +135,7 @@ let beaver = (function() {
     let signature = spatem.deviceId + SIGNATURE_SEPARATOR +
                     spatem.deviceIdType;
     let device = devices.get(signature);
+    manageTimestamp(spatem);
 
     if(device) {
       if(!device.hasOwnProperty('spatem') ||
@@ -139,13 +158,16 @@ let beaver = (function() {
   function handleContext(data) {
     if(data) {
       for(const signature in data.devices) {
+        let device = data.devices[signature];
+        manageTimestamp(device.dynamb);
+        manageTimestamp(device.spatem);
         if(!devices.has(signature)) {
-          devices.set(signature, data.devices[signature]);
+          devices.set(signature, device);
           eventCallbacks['appearance'].forEach(
-                      callback => callback(signature, data.devices[signature]));
+                                      callback => callback(signature, device));
         }
         else {
-          devices.set(signature, data.devices[signature]); // TODO: merge?
+          devices.set(signature, device); // TODO: merge?
         }
       }
     }
@@ -198,7 +220,9 @@ let beaver = (function() {
               raddec: eventCounts.raddec / updateIntervalSeconds,
               dynamb: eventCounts.dynamb / updateIntervalSeconds,
               spatem: eventCounts.spatem / updateIntervalSeconds
-          }
+          },
+          averageEventStaleMilliseconds: Math.round(staleMillisecondsSum /
+                                                    staleMillisecondsCount)
       };
       eventCounts.raddec = 0;
       eventCounts.dynamb = 0;
@@ -276,6 +300,7 @@ let beaver = (function() {
   let stream = function(serverRootUrl, options) {
     options = options || {};
     options.isDebug = options.isDebug || false;
+    reviseTimestamps = options.reviseTimestamps || false;
     let streams = {};
 
     if(isValidUrl(serverRootUrl)) {
@@ -291,16 +316,20 @@ let beaver = (function() {
       if(options.io) {
         streams.socket = options.io.connect(streamUrl);
         handleSocketEvents(streams.socket, streamUrl);
+        sources.set(streamUrl, { socket: streams.socket });
       }
     }
     else {
+      // Sources will be incorrect in rare case of identical ioUrl & wsUrl!
       if(options.io && isValidUrl(options.ioUrl)) {
         streams.socket = options.io.connect(options.ioUrl);
         handleSocketEvents(streams.socket, options.ioUrl);
+        sources.set(options.ioUrl, { socket: streams.socket });
       }
       if(isValidUrl(options.wsUrl)) {
         streams.websocket = new WebSocket(options.wsUrl);
         handleWebSocketEvents(streams.websocket);
+        sources.set(options.wsUrl, { websocket: streams.websocket });
       }
     }
 
@@ -314,6 +343,7 @@ let beaver = (function() {
   // Poll from the given server
   let poll = function(serverRootUrl, options) {
     options = options || {};
+    reviseTimestamps = options.reviseTimestamps || false;
     let queryUrl = serverRootUrl + '/context/';
 
     if(options.deviceSignature) {
@@ -328,7 +358,9 @@ let beaver = (function() {
       eventCallbacks['poll'].forEach(callback => callback());
 
       if(Number.isInteger(options.intervalMilliseconds)) {
-        setTimeout(poll, options.intervalMilliseconds, serverRootUrl, options);
+        let timeoutId = setTimeout(poll, options.intervalMilliseconds,
+                                   serverRootUrl, options);
+        sources.set(queryUrl, { timeoutId: timeoutId });
       }
     });
 
@@ -336,6 +368,22 @@ let beaver = (function() {
       update(); // Start periodic updates
     }
   };
+
+  // Reset all streams and polls, and optionally clear devices
+  let reset = function(options) {
+    options = options || {};
+
+    sources.forEach((source, url) => {
+      if(source.socket) { source.socket.disconnect(); }
+      if(source.websocket) { source.websocket.close(); }
+      if(source.timeoutId) { clearTimeout(source.timeoutId); }
+    });
+    sources.clear();
+
+    if(options.clearDevices) {
+      devices.clear();
+    }
+  }
 
   // Register a callback for the given event
   let setEventCallback = function(event, callback) {
@@ -352,7 +400,8 @@ let beaver = (function() {
     stream: stream,
     poll: poll,
     on: setEventCallback,
-    devices: devices
+    devices: devices,
+    reset: reset
   }
 
 }());
