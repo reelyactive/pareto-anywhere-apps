@@ -19,6 +19,10 @@ const POSITION_ROUTE = '/position';
 const STORIES_ROUTE = '/stories';
 const IMAGES_ROUTE = '/store/images';
 const MAX_STALE_MILLISECONDS = 10000;
+const SNAPSHOT_HEADER_ROW = [ '"deviceSignature"', '"rssi"',
+                              '"receiverSignature"', '"numberOfReceivers"',
+                              '"numberOfDecodings"', '"numberOfUniquePackets"',
+                              '"timestamp"' ];
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
@@ -27,6 +31,8 @@ let stalealert = document.querySelector('#stalealert');
 let reviseTimestampsSwitch = document.querySelector('#reviseTimestampsSwitch');
 let filterSelect = document.querySelector('#filterSelect');
 let searchInput = document.querySelector('#searchInput');
+let saveButton = document.querySelector('#saveButton');
+let csvItem = document.querySelector('#csvItem');
 let time = document.querySelector('#time');
 let devicesCount = document.querySelector('#devicesCount');
 let devicesTableBody = document.querySelector('#devicesTableBody');
@@ -53,6 +59,7 @@ let baseUrl = window.location.protocol + '//' + window.location.hostname +
 let displayedDevices = new Map();
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
+let snapshot;
 
 // Update clock
 updateClock();
@@ -85,6 +92,8 @@ beaver.on('disconnect', () => {
 
 // Monitor buttons
 createStory.onclick = createAndAssociateStory;
+saveButton.onclick = captureSnapshot;
+csvItem.onclick = downloadCsv;
 
 // Monitor options controls
 reviseTimestampsSwitch.onchange = init;
@@ -320,6 +329,50 @@ function createDeviceTimestamp(device) {
   return new Date(timestamp).toLocaleTimeString([], TIME_OPTIONS);
 }
 
+// Capture a snapshot of the devices table as JSON
+function captureSnapshot() {
+  snapshot = [ SNAPSHOT_HEADER_ROW ];
+
+  if(devicesTableBody.hasChildNodes()) {
+    for(const tr of devicesTableBody.childNodes) {
+      if(!tr.hidden) {
+        let row = [];
+        let columnIndex = 0;
+        let isValidRow = false;
+        for(const td of tr.childNodes) {
+          switch(columnIndex++) {
+            case 0: // device signature
+            case 3: // receiver signature
+            case 5: // timestamp
+              row.push('"' + td.textContent + '"');
+              break;
+            case 2: // rssi
+              isValidRow = !isNaN(Number(td.textContent));
+              row.push(td.textContent);
+              break;
+            case 4: // rec/dec/pac
+              let elements = td.textContent.split('/');
+              elements.forEach((element) => { row.push(element.trim()); });
+              break;
+          }
+        }
+        if(isValidRow) {
+          snapshot.push(row);
+        }
+      }
+    }
+  }
+}
+
+// Convert the snapshot to CSV and initiate download
+function downloadCsv() {
+  let csvFilename = 'devices-observer-' + createCurrentTimeString() + '.csv';
+  let csvSnapshot = 'data:text/csv;charset=utf-8,';
+  csvSnapshot += snapshot.map(row => row.join(',')).join('\n');
+  csvItem.setAttribute('href', encodeURI(csvSnapshot));
+  csvItem.setAttribute('download', csvFilename);
+}
+
 // Update the offcanvas body based on the selected device
 function updateOffcanvasBody(deviceSignature) {
   let device = beaver.devices.get(deviceSignature) || {};
@@ -524,6 +577,21 @@ updateUrl.onclick = associationActions['url'];
 updateTags.onclick = associationActions['tags'];
 updateDirectory.onclick = associationActions['directory'];
 updatePosition.onclick = associationActions['position'];
+
+
+// Return a time/date string in the form YYMMDD-HHMMSS
+function createCurrentTimeString() {
+  let date = new Date();
+  let timestring = date.getFullYear().toString().slice(-2);
+  timestring += ('0' + (date.getMonth() + 1)).slice(-2);
+  timestring += ('0' + date.getDate()).slice(-2);
+  timestring += '-';
+  timestring += ('0' + date.getHours()).slice(-2);
+  timestring += ('0' + date.getMinutes()).slice(-2);
+  timestring += ('0' + date.getSeconds()).slice(-2);
+
+  return timestring;
+}
 
 // Create an element as specified
 function createElement(elementName, classNames, content) {
