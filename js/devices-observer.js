@@ -298,14 +298,18 @@ function createDeviceRssi(device) {
 }
 
 // Create the device receiver
-// TODO: receiverAntenna
 function createDeviceReceiver(device) {
+  let receiverSignature = '-';
+
   if(Array.isArray(device.raddec?.rssiSignature) &&
-     device.raddec.rssiSignature.length > 0) {
-    return device.raddec.rssiSignature[0].receiverId + '/' +
-           device.raddec.rssiSignature[0].receiverIdType;
+     (device.raddec.rssiSignature.length > 0)) {
+    receiverSignature = device.raddec.rssiSignature[0].receiverId + '/' +
+                        device.raddec.rssiSignature[0].receiverIdType;
+    if(Number.isInteger(device.raddec.rssiSignature[0].receiverAntenna)) {
+      receiverSignature += '/' + device.raddec.rssiSignature[0].receiverAntenna;
+    }
   }
-  return '-';
+  return receiverSignature;
 }
 
 // Create the device number of receivers/decodings/packets
