@@ -1,19 +1,20 @@
 Pareto Anywhere Apps
 ====================
 
-Collection of web apps for [context-aware physical spaces](https://www.reelyactive.com/context-aware-physical-spaces/) bundled with the [Pareto Anywhere](https://www.reelyactive.com/pareto/anywhere/) open source middleware suite.
+Collection of web apps for [context-aware physical spaces](https://www.reelyactive.com/context-aware-physical-spaces/) bundled with the [Pareto Anywhere](https://www.reelyactive.com/pareto/anywhere/) open source IoT middleware suite.
 
 ![Pareto Anywhere Apps screenshot](https://reelyactive.github.io/diy/common/images/pareto-anywhere-apps-screenshot.jpg)
 
 Visit [reelyactive.github.io/pareto-anywhere-apps](https://reelyactive.github.io/pareto-anywhere-apps/) for a hosted version of these apps, or browse directly to a specific demo as follows:
 - [Hyperlocal Context Explorer](https://reelyactive.github.io/pareto-anywhere-apps/hlc-explorer/?demo=default&updates=periodic)
 - [Ambient Context](https://reelyactive.github.io/pareto-anywhere-apps/ambient-context/?demo=default)
+- [Devices Observer](https://reelyactive.github.io/pareto-anywhere-apps/devices-observer/?demo=default)
+- [Raindrops](https://reelyactive.github.io/pareto-anywhere-apps/raindrops/?demo=default)
 - [Live Directory](https://reelyactive.github.io/pareto-anywhere-apps/live-directory/?demo=default)
 - [Hello dynamb!](https://reelyactive.github.io/pareto-anywhere-apps/hello-dynamb/?demo=default)
 - [Hello spatem!](https://reelyactive.github.io/pareto-anywhere-apps/hello-spatem/?demo=default)
 - [Hello beaver!](https://reelyactive.github.io/pareto-anywhere-apps/hello-beaver/?demo=default)
 - [Hello Sniffypedia!](https://reelyactive.github.io/pareto-anywhere-apps/hello-sniffypedia/?demo=default)
-- [Devices Observer](https://reelyactive.github.io/pareto-anywhere-apps/devices-observer/?demo=default)
 - [Occupancy Observer](https://reelyactive.github.io/pareto-anywhere-apps/occupancy-observer/?demo=default)
 
 
