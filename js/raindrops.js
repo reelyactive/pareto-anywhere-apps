@@ -10,6 +10,7 @@ const TILE_SOURCE_PARAMETER = 'tileSource';
 const RAINDROP_DURATION_MILLISECONDS = 3600;
 const MAP_MIN_HEIGHT_PX = 480;
 const MAP_UNUSABLE_HEIGHT_PX = 120;
+const INITIAL_ZOOM = 19;
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
@@ -19,6 +20,7 @@ let demoalert = document.querySelector('#demoalert');
 let tileLayerSource;
 let selectedDeviceSignature;
 let cormorantOptions;
+let isMapCentered = false;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -122,6 +124,12 @@ function handleSpatem(spatem) {
         featureSource.addFeature(styledFeature); // OpenLayers handles dupes
       }
     });
+  }
+
+  if(!isMapCentered) {
+    map.getView().setCenter(spatem.data.features[0].geometry.coordinates);
+    map.getView().setZoom(INITIAL_ZOOM);
+    isMapCentered = true;
   }
 }
 
