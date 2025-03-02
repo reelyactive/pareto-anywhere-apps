@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022-2024
+ * Copyright reelyActive 2022-2025
  * We believe in an open Internet of Things
  */
 
@@ -72,7 +72,7 @@ let starling = (function() {
   let DEFAULT_UPDATE_CYCLE_MILLISECONDS = 4000;
 
   // Internal variables
-  let eventCallbacks = { raddec: [], dynamb: [], connect: [] };
+  let eventCallbacks = { raddec: [], dynamb: [], spatem: [], connect: [] };
   let transmitters = DEFAULT_TRANSMITTERS;
   let receivers = DEFAULT_RECEIVERS;
   let transmitterIndex = 0;
@@ -128,6 +128,54 @@ let starling = (function() {
     });
 
     return dynamb;
+  }
+
+  // Emulate a spatem
+  function createSpatem(raddec, receivers) {
+    let position = [ 0, 0 ];
+    let remainingProportionX = 1;
+    let remainingProportionY = 1;
+
+    raddec.rssiSignature.forEach((entry, index) => {
+      let receiver = receivers.find(element => element.id === entry.receiverId);
+      let isLastEntry = (index === (raddec.rssiSignature.length - 1));
+
+      if(isLastEntry) {
+        position[0] += receiver.position[0] * remainingProportionX;
+        position[1] += receiver.position[1] * remainingProportionY;
+      }
+      else {
+        let proportionX = Math.min(Math.random(), remainingProportionX);
+        let proportionY = Math.min(Math.random(), remainingProportionY);
+        position[0] += receiver.position[0] * proportionX;
+        position[1] += receiver.position[1] * proportionY;
+        remainingProportionX -= proportionX;
+        remainingProportionY -= proportionY;
+      }
+    });
+
+    let spatem = {
+      "deviceId": raddec.transmitterId,
+      "deviceIdType": raddec.transmitterIdType,
+      "type": "position",
+      "data": {
+         "type": "FeatureCollection",
+         "features": [{
+          "type": "Feature",
+          "properties": {
+            "isDevicePosition": true,
+            "positioningEngine": "AnchorAndPull"
+          },
+          "geometry": {
+            "type": "Point",
+            "coordinates": position
+          }
+        }]
+      },
+      "timestamp": Date.now()
+    };
+
+    return spatem;
   }
 
   // Emulate a dynamb property
@@ -201,15 +249,15 @@ let starling = (function() {
   function iterate() {
     let raddec = createRaddec(transmitters[transmitterIndex], receivers);
     let dynamb = createDynamb(transmitters[transmitterIndex]);
+    let spatem = createSpatem(raddec, receivers);
     let interval = DEFAULT_UPDATE_CYCLE_MILLISECONDS / transmitters.length;
 
-    eventCallbacks.raddec.forEach((callback) => {
-      callback(raddec);
-    });
+    eventCallbacks.raddec.forEach((callback) => { callback(raddec); });
     if(dynamb) {
-      eventCallbacks.dynamb.forEach((callback) => {
-        callback(dynamb);
-      });
+      eventCallbacks.dynamb.forEach((callback) => { callback(dynamb); });
+    }
+    if(spatem) {
+      eventCallbacks.spatem.forEach((callback) => { callback(spatem); });
     }
     if(isConnect) {
       eventCallbacks.connect.forEach((callback) => callback());
