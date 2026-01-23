@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2016-2025
+ * Copyright reelyActive 2016-2026
  * We believe in an open Internet of Things
  */
 
@@ -242,11 +242,11 @@ let beaver = (function() {
         if(!response.ok) { throw new Error('GET returned ' + response.status); }
         return response.json();
       })
-      .then((result) => { return callback(result); })
+      .then((result) => { return callback(result, true); })
       .catch((error) => {
         let helpfulError = new Error('Failed to GET ' + url);
         eventCallbacks['error'].forEach(callback => callback(helpfulError));
-        return callback(null);
+        return callback(null, false);
       });
   }
 
@@ -353,9 +353,9 @@ let beaver = (function() {
       devices.clear();
     }
 
-    retrieveJson(queryUrl, (data) => {
+    retrieveJson(queryUrl, (data, isSuccess) => {
       handleContext(data);
-      eventCallbacks['poll'].forEach(callback => callback());
+      eventCallbacks['poll'].forEach(callback => callback(isSuccess));
 
       if(Number.isInteger(options.intervalMilliseconds)) {
         let timeoutId = setTimeout(poll, options.intervalMilliseconds,

@@ -88,8 +88,9 @@ beaver.on('connect', () => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
   demoalert.hidden = true;
 });
-beaver.on('poll', () => {
+beaver.on('poll', (isSuccess) => {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  demoalert.hidden = isSuccess;
   displayDevices(beaver.devices);
   isPollPending = false;
 });
@@ -228,10 +229,10 @@ function updateUpdates() {
 }
 
 
+// Update the filters
 function updateFilters() {
   minRSSIValue.textContent = minRSSIRange.value;
   minRSSI = parseInt(minRSSIRange.value);
-  console.log(minRSSI);
 }
 
 
