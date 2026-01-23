@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2023-2024
+ * Copyright reelyActive 2023-2026
  * We believe in an open Internet of Things
  */
 
@@ -522,6 +522,22 @@ class DevicesTable {
     let namedNodes = document.getElementsByName(deviceSignature + '-name');
 
     namedNodes.forEach((node) => { node.textContent = deviceName; });
+  }
+
+  /**
+   * Change the maximum number of rows to display
+   */
+  changeMaxRows(maxRows) {
+    let self = this;
+
+    self.maxRows = maxRows;
+
+    while(self.displayedDevices.size > maxRows) {
+      let lastDeviceSignature = [...self.displayedDevices.keys()].at(-1); 
+      if(self.selectedDeviceSignature !== lastDeviceSignature) {
+        self.removeDevice(lastDeviceSignature);
+      }  
+    }
   }
 
   /**

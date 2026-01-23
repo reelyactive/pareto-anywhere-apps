@@ -1,5 +1,5 @@
 /**
- * Copyright reelyActive 2022-2023
+ * Copyright reelyActive 2022-2026
  * We believe in an open Internet of Things
  */
 
@@ -15,10 +15,12 @@ let message = document.querySelector('#message');
 let deviceCount =  document.querySelector('#deviceCount');
 let spatemRate = document.querySelector('#spatemRate');
 let spatemDisplay = document.querySelector('#spatemdisplay');
+let listLengthSelect = document.querySelector('#listLengthSelect');
 
 // Other variables
 let selectedDeviceSignature;
 let cormorantOptions;
+let maxNumberOfListedDevices = 10;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -31,7 +33,8 @@ let devicesTableOptions = {
   beaver: beaver,
   digitalTwins: cormorant.digitalTwins,
   isFilteredDevice: isFilteredDevice,
-  isClockDisplayed: true
+  isClockDisplayed: true,
+  maxRows: maxNumberOfListedDevices
 };
 let devicesTable = new DevicesTable('#devicestable', devicesTableOptions);
 
@@ -42,8 +45,9 @@ beaver.on('stats', handleStats);
 beaver.on('error', handleError);
 beaver.on('disconnect', handleDisconnect);
 
-// Handle devicesTable events
+// Handle devicesTable and selectListLength events
 devicesTable.on('selection', handleSelection);
+listLengthSelect.addEventListener('change', updateListLength);
 
 // Demo mode: connect to starling.js
 if(isDemo) {
@@ -114,6 +118,12 @@ function handleSelection(deviceSignature) {
   }
 
   cuttlefishSpatem.render(spatem || {}, spatemdisplay);
+}
+
+// Update the length of devices listed in the table
+function updateListLength() {
+  maxNumberOfListedDevices = parseInt(listLengthSelect.value);
+  devicesTable.changeMaxRows(maxNumberOfListedDevices);
 }
 
 // Determine if the given device is passing the filter
