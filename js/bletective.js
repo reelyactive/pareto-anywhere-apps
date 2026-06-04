@@ -12,7 +12,7 @@ const DEFAULT_BLE_URI = 'https://sniffypedia.org/Product/Any_BLE-Device/';
 let connectIcon = document.querySelector('#connectIcon');
 let demoalert = document.querySelector('#demoalert');
 let novelCount = document.querySelector('#novelCount');
-let devicesCount = document.querySelector('#devicesCount');
+let deviceCount = document.querySelector('#deviceCount');
 let bletbody = document.querySelector('#bletbody');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
@@ -36,6 +36,7 @@ beaver.on('connect', handleConnect);
 beaver.on('appearance', handleAppearance);
 beaver.on('raddec', handleRaddec);
 beaver.on('stats', (stats) => { deviceCount.textContent = beaver.devices.size });
+beaver.on('disappearance', handleDisappearance);
 beaver.on('error', handleError);
 beaver.on('disconnect', handleDisconnect);
 
@@ -64,25 +65,31 @@ function handleAppearance(deviceSignature, device) {
   if(isNovelDevice) {
     updateNovelDevice(deviceSignature, device.raddec);
   }
+
+  deviceCount.textContent = beaver.devices.size;
 }
 
 // Handle a radio decoding
 function handleRaddec(raddec) {
   let deviceSignature = raddec.transmitterId + '/' + raddec.transmitterIdType;
   let device = beaver.devices.get(deviceSignature);
-  let isStillNovelDevice = (device.statid?.uri === DEFAULT_BLE_URI);
+  let isNovelDevice = (device.statid?.uri === DEFAULT_BLE_URI);
 
-  if(novelDevices.has(deviceSignature)) {
-    if(isStillNovelDevice) {
-      updateNovelDevice(deviceSignature, raddec);
-    }
-    else {
-      let tr = displayedDevices.get(deviceSignature);
-      bletbody.removeChild(tr);
-      displayedDevices.delete(deviceSignature);
-      novelDevices.delete(deviceSignature);
-    }
+  if(isNovelDevice) {
+    updateNovelDevice(deviceSignature, raddec);
   }
+  else if(novelDevices.has(deviceSignature)) {
+    removeNovelDevice(deviceSignature);
+  }
+}
+
+// Handle a disappearance
+function handleDisappearance(deviceSignature) {
+  if(novelDevices.has(deviceSignature)) {
+    removeNovelDevice(deviceSignature);
+  }
+
+  deviceCount.textContent = beaver.devices.size;
 }
 
 // Handle stream disconnection
@@ -105,7 +112,7 @@ function handleDeviceClick(deviceSignature) {
 }
 
 // Update a novel device
-function updateNovelDevice(deviceSignature, raddec, appendRow) {
+function updateNovelDevice(deviceSignature, raddec) {
   let identifiers = novelDevices.get(deviceSignature) || {};
   updateIdentifiers(raddec, identifiers);
 
@@ -122,7 +129,15 @@ function updateNovelDevice(deviceSignature, raddec, appendRow) {
   }
 
   novelCount.textContent = displayedDevices.size;
-  deviceCount.textContent = beaver.devices.size;
+}
+
+// Remove a novel device
+function removeNovelDevice(deviceSignature) {
+  let tr = displayedDevices.get(deviceSignature);
+  bletbody.removeChild(tr);
+  displayedDevices.delete(deviceSignature);
+  novelDevices.delete(deviceSignature);
+  novelCount.textContent = displayedDevices.size;
 }
 
 // Update identifiers
