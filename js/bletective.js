@@ -14,10 +14,16 @@ let demoalert = document.querySelector('#demoalert');
 let novelCount = document.querySelector('#novelCount');
 let devicesCount = document.querySelector('#devicesCount');
 let bletbody = document.querySelector('#bletbody');
+let offcanvas = document.querySelector('#offcanvas');
+let offcanvasTitle = document.querySelector('#offcanvasTitle');
+let offcanvasBody = document.querySelector('#offcanvasBody');
+let packetsDisplay = document.querySelector('#packetsDisplay');
 
 // Other variables
 let novelDevices = new Map();
 let displayedDevices = new Map();
+let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
+let selectedDeviceSignature;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -88,6 +94,14 @@ function handleDisconnect() {
 function handleError(error) {
   connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-danger'));
   demoalert.hidden = false;
+}
+
+// Handle device click
+function handleDeviceClick(deviceSignature) {
+  selectedDeviceSignature = deviceSignature;
+  offcanvasTitle.textContent = selectedDeviceSignature;
+  updateOffcanvasBody(selectedDeviceSignature);
+  bsOffcanvas.show();
 }
 
 // Update a novel device
@@ -212,9 +226,9 @@ function reendify(data, numberOfBytes) {
 }
 
 // Create the table row
-function createRow(deviceSignature, identifiers) {
+function createRow(signature, identifiers) {
   let tds = [];
-  tds.push(createElement('td', null, deviceSignature));
+  tds.push(createElement('td', null, createDeviceSignature(signature)));
   tds.push(createElement('td', null, identifiers.name || ''));
   tds.push(createElement('td', null, identifiers.companyCode || ''));
   tds.push(createElement('td', null, identifiers.uuid16 || ''));
@@ -223,12 +237,32 @@ function createRow(deviceSignature, identifiers) {
   return createElement('tr', null, tds);
 }
 
+// Create the device signature
+function createDeviceSignature(signature) {
+  let a = createElement('a', 'font-monospace text-decoration-none', signature);
+
+  a.addEventListener('click', (event) => { handleDeviceClick(signature); });
+
+  return a;
+}
+
 // Update the given table row
 function updateRow(deviceRow, identifiers) {
   deviceRow.childNodes[1].textContent = identifiers.name || '';
   deviceRow.childNodes[2].textContent = identifiers.companyCode || '';
   deviceRow.childNodes[3].textContent = identifiers.uuid16 || '';
   deviceRow.childNodes[4].textContent = identifiers.uuid128 || '';
+}
+
+// Update the offcanvas body based on the selected device
+function updateOffcanvasBody(deviceSignature) {
+  let device = beaver.devices.get(deviceSignature) || {};
+  let packets = device?.raddec?.packets || [];
+
+  packetsDisplay.textContent = '';
+  packets.forEach((packet) => {
+    packetsDisplay.textContent += packet + '\r\n';
+  });
 }
 
 // Create an element as specified
