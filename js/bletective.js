@@ -14,6 +14,7 @@ let demoalert = document.querySelector('#demoalert');
 let novelCount = document.querySelector('#novelCount');
 let deviceCount = document.querySelector('#deviceCount');
 let bletbody = document.querySelector('#bletbody');
+let classifiedtbody = document.querySelector('#classifiedtbody');
 let offcanvas = document.querySelector('#offcanvas');
 let offcanvasTitle = document.querySelector('#offcanvasTitle');
 let offcanvasBody = document.querySelector('#offcanvasBody');
@@ -22,6 +23,9 @@ let packetsDisplay = document.querySelector('#packetsDisplay');
 // Other variables
 let novelDevices = new Map();
 let displayedDevices = new Map();
+let classifiedIdentifiers = { name: new Map(),
+                              uuid16: new Map(),
+                              companyCode: new Map() };
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
 
@@ -115,6 +119,7 @@ function handleDeviceClick(deviceSignature) {
 function updateNovelDevice(deviceSignature, raddec) {
   let identifiers = novelDevices.get(deviceSignature) || {};
   updateIdentifiers(raddec, identifiers);
+  lookupIdentifiers(identifiers);
 
   novelDevices.set(deviceSignature, identifiers);
 
@@ -146,6 +151,35 @@ function updateIdentifiers(raddec, identifiers) {
     raddec.packets.forEach((packet) => {
       mergeIdentifiers(identifiers, determineIdentifiers(packet));
     });
+  }
+}
+
+// Look up identifiers from the lists of assigned numbers
+function lookupIdentifiers(identifiers) {
+  for(identifierType in identifiers) {
+    if(classifiedIdentifiers.hasOwnProperty(identifierType)) {
+      identifiers[identifierType].forEach((identifier) => {
+        if(!classifiedIdentifiers[identifierType].has(identifier)) {
+          let numericalId = parseInt(identifier, 16);
+          let classifiedName = null;
+
+          if(identifierType === 'uuid16') {
+            classifiedName = BLUETOOTH_MEMBER_UUIDS.get(numericalId) ||
+                             BLUETOOTH_CHARACTERISTIC_UUIDS.get(numericalId);
+          }
+          else if(identifierType === 'companyCode') {
+            classifiedName = BLUETOOTH_COMPANY_IDENTIFIERS.get(numericalId);
+          }
+
+          if(classifiedName) {
+            let tr = createClassifiedRow(identifierType, identifier,
+                                         classifiedName);
+            classifiedIdentifiers[identifierType].set(identifier, tr);
+            classifiedtbody.appendChild(tr);
+          }
+        }
+      });
+    }
   }
 }
 
@@ -248,6 +282,25 @@ function createRow(signature, identifiers) {
   tds.push(createElement('td', null, identifiers.companyCode || ''));
   tds.push(createElement('td', null, identifiers.uuid16 || ''));
   tds.push(createElement('td', null, identifiers.uuid128 || ''));
+
+  return createElement('tr', null, tds);
+}
+
+// Create the classified table row
+function createClassifiedRow(identifierType, identifier, classifiedName) {
+  let tds = [];
+  let typeContent = '';
+
+  if(identifierType === 'companyCode') {
+    typeContent = [ createElement('i', 'fab fa-bluetooth'), ' Company Code' ];
+  }
+  else if(identifierType === 'uuid16') {
+    typeContent = [ createElement('i', 'fab fa-bluetooth'), ' UUID-16' ];
+  }
+
+  tds.push(createElement('td', null, typeContent));
+  tds.push(createElement('td', 'font-monospace', identifier));
+  tds.push(createElement('td', null, classifiedName));
 
   return createElement('tr', null, tds);
 }

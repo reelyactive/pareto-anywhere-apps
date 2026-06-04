@@ -90,7 +90,7 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://getbootstrap.com" >
+                     href="https://getbootstrap.com">
                     <i class="fab fa-bootstrap"></i>
                     Bootstrap 5 &nbsp;
                     <span class="badge bg-light text-dark">
@@ -100,7 +100,7 @@
                 </li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://fontawesome.com" >
+                     href="https://fontawesome.com">
                     <i class="fab fa-font-awesome"></i>
                     Font Awesome (Free) &nbsp;
                     <span class="badge bg-light text-dark">
@@ -111,7 +111,7 @@
                 </li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://github.com/reelyactive/web-style-guide/" >
+                     href="https://github.com/reelyactive/web-style-guide/">
                     <i class="fas fa-code"></i>
                     Web Style Guide &nbsp;
                     <span class="badge bg-light text-dark">
@@ -122,9 +122,30 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://github.com/reelyactive/beaver/" >
+                     href="https://sniffypedia.org">
+                    <i class="fas fa-database"></i>
+                    Sniffypedia &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-creative-commons"></i>
+                      <i class="fab fa-osi"></i> ODbL
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/beaver/">
                     <i class="fab fa-js"></i>
                     beaver.js &nbsp;
+                    <span class="badge bg-light text-dark">
+                      <i class="fab fa-osi"></i> MIT
+                    </span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" target="_blank"
+                     href="https://github.com/reelyactive/bluetooth-assigned-numbers/">
+                    <i class="fab fa-js"></i>
+                    bluetooth-assigned-numbers &nbsp;
                     <span class="badge bg-light text-dark">
                       <i class="fab fa-osi"></i> MIT
                     </span>
@@ -143,7 +164,7 @@
                 <li class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" target="_blank"
-                     href="https://www.reelyactive.com/made-in-montreal/" >
+                     href="https://www.reelyactive.com/made-in-montreal/">
                     <i class="fab fa-canadian-maple-leaf"></i>
                     Made in Montr&eacute;al &nbsp;
                     <i class="fas fa-city"></i>
@@ -168,7 +189,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"
                     aria-label="Close"></button>
           </div>
-          <p class="lead text-center mt-5"> The following <span id="novelCount">0</span> of <span id="deviceCount">0</span> devices are unclassified by Sniffypedia. </p>
+          <p class="lead text-center mt-5"> The following <span id="novelCount">0</span> of <span id="deviceCount">0</span> devices are unclassified by <span class="text-body-emphasis">Sniffypedia</span>: </p>
           <table class="table table-hover my-4">
             <thead>
               <tr>
@@ -180,6 +201,18 @@
               </tr>
             </thead>
             <tbody id="bletbody" class="font-monospace">
+            </tbody>
+          </table>
+          <p class="lead text-center mt-5"> The following <span class="text-body-emphasis"><i class="fab fa-bluetooth"></i> Assigned Numbers</span> have been successfully looked up: </p>
+          <table class="table table-hover my-4">
+            <thead>
+              <tr>
+                <th> Type </th>
+                <th> Value </th>
+                <th> Name </th>
+              </tr>
+            </thead>
+            <tbody id="classifiedtbody">
             </tbody>
           </table>
         </div>
@@ -218,6 +251,9 @@
     <script src="../js/socket.io.min.js"></script>
     <script src="../js/beaver.js"></script>
     <script src="../js/starling.js"></script>
+    <script src="../js/bluetoothcharacteristicuuids.js"></script>
+    <script src="../js/bluetoothcompanyidentifiers.js"></script>
+    <script src="../js/bluetoothmemberuuids.js"></script>
     <script src="../js/bletective.js"></script>
   </body>
 </html>
