@@ -7,6 +7,8 @@
 // Constants
 const DEMO_SEARCH_PARAMETER = 'demo';
 const DEFAULT_BLE_URI = 'https://sniffypedia.org/Product/Any_BLE-Device/';
+const POLL_MILLISECONDS = 5000;
+const RADDEC_ROUTE = '/devices/raddec';
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
@@ -28,6 +30,8 @@ let classifiedIdentifiers = { name: new Map(),
                               companyCode: new Map() };
 let bsOffcanvas = new bootstrap.Offcanvas(offcanvas);
 let selectedDeviceSignature;
+let pollingInterval = POLL_MILLISECONDS;
+let isPollPending = false;
 
 // Initialise based on URL search parameters, if any
 let searchParams = new URLSearchParams(location.search);
@@ -37,10 +41,8 @@ let baseUrl = window.location.protocol + '//' + window.location.hostname + ':' +
 
 // Handle beaver events
 beaver.on('connect', handleConnect);
-beaver.on('appearance', handleAppearance);
 beaver.on('raddec', handleRaddec);
-beaver.on('stats', (stats) => { deviceCount.textContent = beaver.devices.size });
-beaver.on('disappearance', handleDisappearance);
+beaver.on('poll', handlePoll);
 beaver.on('error', handleError);
 beaver.on('disconnect', handleDisconnect);
 
@@ -53,24 +55,45 @@ if(isDemo) {
 
 // Normal mode: connect to socket.io
 else {
-  beaver.stream(baseUrl, { io: io });
+  beaver.stream(null, { io: io, ioUrl: baseUrl + RADDEC_ROUTE });
+}
+
+pollAndDisplay();
+pollingInterval = setInterval(pollAndDisplay, POLL_MILLISECONDS);
+
+// GET the devices and display in DOM
+function pollAndDisplay() {
+  if(!isPollPending) {
+    isPollPending = true;
+
+    if(isDemo) {
+      let response = starling.getContext();
+      devices = new Map(Object.entries(response.devices || {}));
+      isPollPending = false;
+      connectIcon.hidden = false;
+      displayDevices(devices);
+    }
+    else {
+      beaver.poll(baseUrl, {});
+      connectIcon.hidden = false;
+    }
+  }
 }
 
 // Handle stream connection
 function handleConnect() {
   demoalert.hidden = true;
-  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  if(!isDemo) {
+    connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  }
 }
 
-// Handle an appearance
-function handleAppearance(deviceSignature, device) {
-  let isNovelDevice = (device.statid?.uri === DEFAULT_BLE_URI);
-
-  if(isNovelDevice) {
-    updateNovelDevice(deviceSignature, device.raddec);
-  }
-
-  deviceCount.textContent = beaver.devices.size;
+// Handle a poll
+function handlePoll(isSuccess) {
+  demoalert.hidden = isSuccess;
+  connectIcon.replaceChildren(createElement('i', 'fas fa-cloud text-success'));
+  displayDevices(beaver.devices);
+  isPollPending = false;
 }
 
 // Handle a radio decoding
@@ -82,18 +105,6 @@ function handleRaddec(raddec) {
   if(isNovelDevice) {
     updateNovelDevice(deviceSignature, raddec);
   }
-  else if(novelDevices.has(deviceSignature)) {
-    removeNovelDevice(deviceSignature);
-  }
-}
-
-// Handle a disappearance
-function handleDisappearance(deviceSignature) {
-  if(novelDevices.has(deviceSignature)) {
-    removeNovelDevice(deviceSignature);
-  }
-
-  deviceCount.textContent = beaver.devices.size;
 }
 
 // Handle stream disconnection
@@ -113,6 +124,28 @@ function handleDeviceClick(deviceSignature) {
   offcanvasTitle.textContent = selectedDeviceSignature;
   updateOffcanvasBody(selectedDeviceSignature);
   bsOffcanvas.show();
+}
+
+// Display the given devices from a poll
+function displayDevices(devices) {
+  deviceCount.textContent = devices.size;
+
+  devices.forEach((device, deviceSignature) => {
+    let isNovelDevice = (device.statid?.uri === DEFAULT_BLE_URI);
+
+    if(isNovelDevice) {
+      updateNovelDevice(deviceSignature, device.raddec);
+    }
+    else if(novelDevices.has(deviceSignature)) {
+      removeNovelDevice(deviceSignature);
+    }
+  });
+
+  novelDevices.forEach((device, deviceSignature) => {
+    if(!devices.has(deviceSignature)) {
+      removeNovelDevice(deviceSignature);
+    }
+  });
 }
 
 // Update a novel device
