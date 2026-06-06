@@ -6,6 +6,7 @@
 
 // Constants
 const DEMO_SEARCH_PARAMETER = 'demo';
+const RADDEC_ROUTE = '/devices/raddec';
 
 // DOM elements
 let connectIcon = document.querySelector('#connectIcon');
@@ -39,7 +40,7 @@ if(isDemo) {
 
 // Normal mode: connect to socket.io
 else {
-  beaver.stream(baseUrl, { io: io });
+  beaver.stream(null, { io: io, ioUrl: baseUrl + RADDEC_ROUTE });
 }
 
 // Handle stream connection
@@ -51,9 +52,11 @@ function handleConnect() {
 // Handle a radio decoding
 function handleRaddec(raddec) {
   if(Array.isArray(raddec.packets)) {
-    raddec.packets.forEach((packet) => {
-      displayPacket(packet);
-      handleVerticalOverflow();
+    raddec.packets.forEach((packet, index) => {
+      if(index < 1) { // TODO: configurable in future?
+        displayPacket(packet);
+        handleVerticalOverflow();
+      }
     });
   }
 }
