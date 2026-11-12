@@ -136,15 +136,34 @@
           <h1 class="mt-5"> Associations Update </h1>
           <p id="availableMessage" class="lead text-body-secondary"> There are currently <span id="numberOfAssociations">&hellip;</span> associations. </p>
           <p id="unavailableMessage" class="lead text-body-secondary" hidden> The <span class="font-monospace">/associations</span> API is unavailable.  Updates are <em>not</em> possible. </p>
-          <div id="updateSection" hidden>
-            <p> Update /associations by uploading a CSV file: </p>
-            <p class="text-center">
-              <input type="file" id="csvInput" accept=".csv, text/csv">
-            </p>
-            <div id="statusAlert" class="alert alert-primary text-center my-4"
-                 role="alert" hidden>
-              Created <b id="numberOfCreatedAssociations">0</b> and
-              updated <b id="numberOfUpdatedAssociations">0</b> associations.
+          <div class="row">
+            <div id="updateSection" class="col-md-6" hidden>
+              <p> <span class="text-body-emphasis">Update</span> <span class="font-monospace">/associations</span> by uploading a CSV file: </p>
+              <p class="text-center">
+                <input type="file" id="csvInput" accept=".csv, text/csv">
+              </p>
+              <div id="statusAlert" class="alert alert-primary text-center my-4"
+                   role="alert" hidden>
+                Created <b id="numberOfCreatedAssociations">0</b> and
+                updated <b id="numberOfUpdatedAssociations">0</b> associations.
+              </div>
+            </div>
+            <div id="exportSection" class="col-md-6" hidden>
+              <p> <span class="text-body-emphasis">Export</span> <span class="font-monospace">/associations</span> as a CSV file: </p>
+              <div class="d-flex justify-content-center">
+                <div class="dropdown d-inline-block">
+                  <button class="btn btn-sm btn-info dropdown-toggle"
+                          id="saveButton" type="button"
+                          data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-save"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li>
+                      <a class="dropdown-item" id="csvItem"> Save as CSV </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>

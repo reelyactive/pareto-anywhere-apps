@@ -25,11 +25,17 @@ let baseUrl = window.location.protocol + '//' + window.location.hostname +
               ':' + window.location.port;
 let associationsUpdateIndex; // TODO: include these in a
 let associationsUpdateCount; //       progress bar?
+let associationsFetchIndex;  // TODO: include these in a
+let associationsFetchCount;  //       progress bar?
+let savedAssociationsMap = new Map();
 
 
 // Handle file inputs
 csvInput.addEventListener('change', handleCsvUpdate);
 
+// Monitor button
+saveButton.onclick = saveAssociations;
+csvItem.onclick = downloadCsv;
 
 // Start by confirming that the /associations API is available
 getAssociations(updateDisplayedElements);
@@ -191,6 +197,7 @@ function updateDisplayedElements(isApiAvailable) {
   availableMessage.hidden = !isApiAvailable;
   unavailableMessage.hidden = isApiAvailable;
   updateSection.hidden = !isApiAvailable;
+  exportSection.hidden = !isApiAvailable;
 }
 
 
@@ -199,9 +206,9 @@ function getAssociations(callback) {
   retrieve(baseUrl + ASSOCIATIONS_ROUTE, (data) => {
     if(data?.associations) {
       numberOfAssociations.textContent = Object.keys(data.associations).length;
-      return callback(true);
+      return callback(true, data.associations);
     }
-    return callback(false);
+    return callback(false, {});
   });
 }
 
@@ -237,6 +244,95 @@ function updateAssociations(associations, callback) {
 }
 
 
+// Retrieve each association sequentially
+function getEachAssociation(associations, callback) {
+  let associationsMap = new Map();
+  let deviceSignatures = Object.keys(associations);
+  associationsFetchIndex = 0;
+  associationsFetchCount = deviceSignatures.length;
+
+  getNextAssociation(() => {
+    return callback(associationsMap);
+  });
+
+  // Uses self-iteration to retrieve each association
+  function getNextAssociation(callback) {
+    let deviceSignature = deviceSignatures[associationsFetchIndex];
+
+    getAssociation(deviceSignature, (association) => {
+      if(association) {
+        associationsMap.set(deviceSignature, association);
+      }
+      if(++associationsFetchIndex < associationsFetchCount) {
+        getNextAssociation(callback);
+      }
+      else {
+        return callback();
+      }
+    });
+  }
+}
+
+
+// Save the associations as a Map
+function saveAssociations() {
+  getAssociations((isApiAvailable, associations) => {
+    if(isApiAvailable) {
+      getEachAssociation(associations, (associationsMap) => {
+        savedAssociationsMap = associationsMap;
+      });
+    }
+  });
+}
+
+
+// Convert the saved associations Map to CSV and initiate download
+function downloadCsv() {
+  let csvFilename = 'associations-' + createCurrentTimeString() + '.csv';
+  let csvAssociations = convertToCsv();
+  csvItem.setAttribute('href', encodeURI(csvAssociations));
+  csvItem.setAttribute('download', csvFilename);
+}
+
+
+// Convert the saved associations Map to CSV
+function convertToCsv() {
+  let csv = 'data:text/csv;charset=utf-8,';
+  csv += 'deviceId,deviceIdType,tags,directory,url,x,y,z\n';
+
+  savedAssociationsMap.forEach((associations, deviceSignature) => {
+    let deviceSignatureElements = deviceSignature.split('/');
+    csv += '"' + deviceSignatureElements[0] + '",' +
+           deviceSignatureElements[1] + ',';
+    csv += associations.tags ? '"' + associations.tags + '",' : ',';
+    csv += associations.directory ? '"' + associations.directory + '",' : ',';
+    csv += associations.url ? '"' + associations.url + '",' : ',';
+
+    for(let axis = 0; axis < 3; axis++) {
+      if(Array.isArray(associations.position) &&
+         (axis < associations.position.length)) {
+        csv += associations.position[axis];
+      }
+
+      csv += (axis < 2) ? ',' : '\n';
+    }
+  });
+
+  return csv;
+}
+
+
+// GET the given association
+function getAssociation(deviceSignature, callback) {
+  retrieve(baseUrl + ASSOCIATIONS_ROUTE + '/' + deviceSignature, (data) => {
+    if(data?.associations) {
+      return callback(data.associations[deviceSignature]);
+    }
+    return callback(null);
+  });
+}
+
+
 // PUT the given association
 function putAssociation(deviceSignature, association, callback) {
   let url = baseUrl + ASSOCIATIONS_ROUTE + '/' + deviceSignature;
@@ -259,6 +355,21 @@ function putAssociation(deviceSignature, association, callback) {
   httpRequest.setRequestHeader('Content-Type', 'application/json');
   httpRequest.setRequestHeader('Accept', 'application/json');
   httpRequest.send(associationString);
+}
+
+
+// Return a time/date string in the form YYMMDD-HHMMSS
+function createCurrentTimeString() {
+  let date = new Date();
+  let timestring = date.getFullYear().toString().slice(-2);
+  timestring += ('0' + (date.getMonth() + 1)).slice(-2);
+  timestring += ('0' + date.getDate()).slice(-2);
+  timestring += '-';
+  timestring += ('0' + date.getHours()).slice(-2);
+  timestring += ('0' + date.getMinutes()).slice(-2);
+  timestring += ('0' + date.getSeconds()).slice(-2);
+
+  return timestring;
 }
 
 
