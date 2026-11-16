@@ -158,14 +158,18 @@ function createAssociation(propertyIndexes, rowData) {
 // handling the case where strings include the separator
 function toDataArray(line) {
   let columns = line.split(',');
+  let isStillSplit = false;
 
-  columns.forEach((column, index) => {
+  for(let index = 0; index < columns.length; index++) {
+    let column = columns[index];
     let isSplitString = (countOccurrences(column, '"') % 2 === 1);
-    if(isSplitString) {
-      let mergedColumn = column + ',' + columns[index + 1];
-      columns.splice(index, 2, mergedColumn);
+    if(isSplitString || isStillSplit) {
+      isStillSplit = (countOccurrences(columns[index + 1], '"') % 2 === 0);
+      let mergedColumn = (column + ',' + columns[index + 1]);
+      columns.splice(index, 2, mergedColumn.replaceAll('"', ''));
+      if(isStillSplit) { index -= 1; }
     }
-  });
+  }
 
   return columns;
 }
@@ -306,7 +310,11 @@ function convertToCsv() {
     let deviceSignatureElements = deviceSignature.split('/');
     csv += deviceSignatureElements[0] + ',' +
            deviceSignatureElements[1] + ',';
-    csv += associations.tags ? '"' + associations.tags + '",' : ',';
+    if(associations.tags) {
+      csv += associations.tags.includes(',') ? '"' + associations.tags + '"' :
+                                               associations.tags;
+    }
+    csv += ',';
     csv += associations.directory ? associations.directory + ',' : ',';
     csv += associations.url ? associations.url + ',' : ',';
 
