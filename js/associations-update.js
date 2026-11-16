@@ -46,6 +46,8 @@ function handleCsvUpdate(event) {
   let file = csvInput.files[0];
   statusAlert.hidden = true;
 
+  // TODO: use PapaParse for reliability
+
   if(!file || (file.type !== 'text/csv')) {
     csvInput.value = '';
     return;
@@ -132,16 +134,16 @@ function createAssociation(propertyIndexes, rowData) {
   }
   if(propertyIndexes.hasOwnProperty('x') &&
      propertyIndexes.hasOwnProperty('y')) {
-    let position;
+    let position = null;
     let x = parseFloat(rowData[propertyIndexes.x]);
     let y = parseFloat(rowData[propertyIndexes.y]);
 
-    if((x !== NaN) && (y !== NaN)) { position = [ x, y ]; }
+    if(Number.isFinite(x) && Number.isFinite(y)) { position = [ x, y ]; }
 
     if(Array.isArray(position) && propertyIndexes.hasOwnProperty('z')) {
       let z = parseFloat(rowData[propertyIndexes.z]);
 
-      if(z !== NaN) { position.push(z); }
+      if(Number.isFinite(z)) { position.push(z); }
       else { position = null; }
     }
 
@@ -302,11 +304,11 @@ function convertToCsv() {
 
   savedAssociationsMap.forEach((associations, deviceSignature) => {
     let deviceSignatureElements = deviceSignature.split('/');
-    csv += '"' + deviceSignatureElements[0] + '",' +
+    csv += deviceSignatureElements[0] + ',' +
            deviceSignatureElements[1] + ',';
     csv += associations.tags ? '"' + associations.tags + '",' : ',';
-    csv += associations.directory ? '"' + associations.directory + '",' : ',';
-    csv += associations.url ? '"' + associations.url + '",' : ',';
+    csv += associations.directory ? associations.directory + ',' : ',';
+    csv += associations.url ? associations.url + ',' : ',';
 
     for(let axis = 0; axis < 3; axis++) {
       if(Array.isArray(associations.position) &&
